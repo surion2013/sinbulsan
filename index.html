@@ -1,39 +1,100 @@
-import { useState, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카운터 페이지</title>
+    <style>
+        /* 전체 화면 스타일 */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f9f9f9;
+        }
 
-const Counter = () => {
-  // 상태 관리
-  const [count, setCount] = useState(0);
+        /* 카드 스타일 */
+        .card {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px 40px;
+            text-align: center;
+            width: 300px;
+        }
 
-  // 증가 함수
-  const increment = useCallback(() => setCount((prev) => prev + 1), []);
+        /* 제목 스타일 */
+        .card h1 {
+            margin: 0;
+            font-size: 20px;
+            color: #333;
+        }
 
-  // 감소 함수 (음수 방지)
-  const decrement = useCallback(() => setCount((prev) => Math.max(0, prev - 1)), []);
+        /* 카운터 숫자 스타일 */
+        .counter {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #333;
+        }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Card className="w-full max-w-sm">
-        {/* 카드 헤더 */}
-        <CardHeader>
-          <CardTitle className="text-center">카운터</CardTitle>
-        </CardHeader>
-        {/* 카드 콘텐츠 */}
-        <CardContent>
-          <div className="flex flex-col items-center gap-4">
-            {/* 카운트 표시 */}
-            <div className="text-4xl font-bold">{count}</div>
-            {/* 버튼 그룹 */}
-            <div className="flex gap-2">
-              <Button onClick={decrement} disabled={count === 0}>취소</Button>
-              <Button onClick={increment}>참가</Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        /* 버튼 스타일 */
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .button-group button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #333;
+            color: #fff;
+            transition: background-color 0.3s;
+        }
+
+        .button-group button:hover {
+            background-color: #555;
+        }
+
+        /* 버튼 간격 조절 */
+        .button-group button + button {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>카운터</h1>
+        <div class="counter" id="counter">0</div>
+        <div class="button-group">
+            <button onclick="decrement()">취소</button>
+            <button onclick="increment()">참가</button>
+        </div>
     </div>
-  );
-};
 
-export default Counter;
+    <script>
+        // 초기 값
+        let count = 0;
+
+        // 카운터 증가 함수
+        function increment() {
+            count++;
+            document.getElementById('counter').innerText = count;
+        }
+
+        // 카운터 감소 함수
+        function decrement() {
+            if (count > 0) {
+                count--;
+            }
+            document.getElementById('counter').innerText = count;
+        }
+    </script>
+</body>
+</html>
