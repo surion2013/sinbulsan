@@ -4,15 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Counter = () => {
   const [count, setCount] = useState(0);
-
+  
   const increment = () => {
     setCount(count + 1);
   };
-
+  
   const decrement = () => {
     setCount(count - 1);
   };
-
+  
   return (
     <Card className="w-full max-w-sm mx-auto">
       <CardHeader>
