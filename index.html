@@ -20,7 +20,6 @@ const Counter = () => {
             <div className="flex gap-2">
               <Button onClick={decrement} disabled={count === 0} aria-label="카운트 감소">취소</Button>
               <Button onClick={increment} aria-label="카운트 증가">참가</Button>
-              <Button onClick={() => setCount(0)}>초기화</Button>
             </div>
           </div>
         </CardContent>
