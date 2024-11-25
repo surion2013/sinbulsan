@@ -1,33 +1,31 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Counter = () => {
   const [count, setCount] = useState(0);
-  
-  const increment = () => {
-    setCount(count + 1);
-  };
-  
-  const decrement = () => {
-    setCount(count - 1);
-  };
-  
+
+  const increment = useCallback(() => setCount((prev) => prev + 1), []);
+  const decrement = useCallback(() => setCount((prev) => Math.max(0, prev - 1)), []);
+
   return (
-    <Card className="w-full max-w-sm mx-auto">
-      <CardHeader>
-        <CardTitle className="text-center">카운터</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col items-center gap-4">
-          <div className="text-4xl font-bold">{count}</div>
-          <div className="flex gap-2">
-            <Button onClick={decrement}>취소</Button>
-            <Button onClick={increment}>참가</Button>
+    <div className="min-h-screen flex items-center justify-center">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="text-center">카운터</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center gap-4">
+            <div className="text-4xl font-bold">{count}</div>
+            <div className="flex gap-2">
+              <Button onClick={decrement} disabled={count === 0} aria-label="카운트 감소">취소</Button>
+              <Button onClick={increment} aria-label="카운트 증가">참가</Button>
+              <Button onClick={() => setCount(0)}>초기화</Button>
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
