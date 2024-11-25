@@ -18,8 +18,8 @@ const Counter = () => {
           <div className="flex flex-col items-center gap-4">
             <div className="text-4xl font-bold">{count}</div>
             <div className="flex gap-2">
-              <Button onClick={decrement} disabled={count === 0} aria-label="카운트 감소">취소</Button>
-              <Button onClick={increment} aria-label="카운트 증가">참가</Button>
+              <Button onClick={decrement} disabled={count === 0}>취소</Button>
+              <Button onClick={increment}>참가</Button>
             </div>
           </div>
         </CardContent>
