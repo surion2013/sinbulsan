@@ -102,16 +102,50 @@
             font-size: 14px;
             background-color: #f8f9fa;
         }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+    <div class="loading">
+        <div class="loading-spinner"></div>
+    </div>
     <div class="card">
         <h1>신불산 강의 참석 인원</h1>
         <div class="capacity-info">최대 수용 인원: 30명</div>
-        <div class="counter" id="counter">0</div>
+        <div class="counter" id="counter">-</div>
         <div class="button-group">
             <button class="cancel-btn" onclick="cancelAttendance()" id="cancelBtn" disabled>취소</button>
-            <button class="join-btn" onclick="joinAttendance()" id="joinBtn">참가</button>
+            <button class="join-btn" onclick="joinAttendance()" id="joinBtn" disabled>참가</button>
         </div>
         <div class="status-message" id="statusMessage"></div>
         <div class="my-status" id="myStatus"></div>
@@ -119,9 +153,92 @@
 
     <script>
         const MAX_CAPACITY = 30;
-        let count = parseInt(localStorage.getItem('totalAttendanceCount')) || 0;
-        let hasJoined = localStorage.getItem('hasJoined') === 'true';
-        let hasCanceled = localStorage.getItem('hasCanceled') === 'true';
+        let count = 0;
+        let hasJoined = false;
+        const loadingScreen = document.querySelector('.loading');
+
+        // 로딩 표시 함수
+        function showLoading() {
+            loadingScreen.classList.add('active');
+        }
+
+        function hideLoading() {
+            loadingScreen.classList.remove('active');
+        }
+
+        // 초기 데이터 로드
+        async function loadInitialData() {
+            try {
+                showLoading();
+                // 서버에서 데이터를 받아오는 API 호출
+                // const response = await fetch('/api/attendance');
+                // const data = await response.json();
+                // count = data.totalCount;
+                // hasJoined = data.isJoined;
+
+                // 임시로 서버 응답을 시뮬레이션
+                await new Promise(resolve => setTimeout(resolve, 500));
+                count = 0;
+                hasJoined = false;
+                
+                updateDisplay();
+            } catch (error) {
+                console.error('데이터 로드 중 오류:', error);
+                alert('데이터를 불러오는 중 오류가 발생했습니다.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function joinAttendance() {
+            if (!hasJoined && count < MAX_CAPACITY) {
+                try {
+                    showLoading();
+                    // 서버에 참가 요청
+                    // const response = await fetch('/api/attendance/join', {
+                    //     method: 'POST'
+                    // });
+                    // const data = await response.json();
+                    
+                    // 임시로 서버 응답을 시뮬레이션
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    count++;
+                    hasJoined = true;
+                    
+                    updateDisplay();
+                } catch (error) {
+                    console.error('참가 신청 중 오류:', error);
+                    alert('참가 신청 중 오류가 발생했습니다.');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+
+        async function cancelAttendance() {
+            if (hasJoined) {
+                try {
+                    showLoading();
+                    // 서버에 취소 요청
+                    // const response = await fetch('/api/attendance/cancel', {
+                    //     method: 'POST'
+                    // });
+                    // const data = await response.json();
+                    
+                    // 임시로 서버 응답을 시뮬레이션
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    count--;
+                    hasJoined = false;
+                    
+                    updateDisplay();
+                } catch (error) {
+                    console.error('참가 취소 중 오류:', error);
+                    alert('참가 취소 중 오류가 발생했습니다.');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
         
         function updateDisplay() {
             const counter = document.getElementById('counter');
@@ -130,14 +247,11 @@
             const statusMessage = document.getElementById('statusMessage');
             const myStatus = document.getElementById('myStatus');
             
-            // 카운터 업데이트
             counter.innerText = count;
             
-            // 버튼 상태 관리
-            joinBtn.disabled = hasJoined || hasCanceled || count >= MAX_CAPACITY;
-            cancelBtn.disabled = !hasJoined || hasCanceled;
+            joinBtn.disabled = hasJoined || count >= MAX_CAPACITY;
+            cancelBtn.disabled = !hasJoined;
             
-            // 상태 메시지 업데이트
             if (count >= MAX_CAPACITY) {
                 statusMessage.textContent = '정원이 마감되었습니다';
                 statusMessage.style.color = '#e74c3c';
@@ -149,42 +263,25 @@
                 statusMessage.style.color = '#2ecc71';
             }
 
-            // 내 참가 상태 표시
             if (hasJoined) {
                 myStatus.textContent = '✅ 참가 신청 완료';
                 myStatus.style.color = '#2ecc71';
-            } else if (hasCanceled) {
-                myStatus.textContent = '❌ 참가 취소 완료';
-                myStatus.style.color = '#e74c3c';
             } else {
                 myStatus.textContent = '미참가 상태';
                 myStatus.style.color = '#666';
             }
-            
-            // 로컬 스토리지에 저장
-            localStorage.setItem('totalAttendanceCount', count);
-            localStorage.setItem('hasJoined', hasJoined);
-            localStorage.setItem('hasCanceled', hasCanceled);
         }
+
+        // WebSocket 연결 시뮬레이션
+        // const socket = new WebSocket('ws://your-server-url');
+        // socket.onmessage = (event) => {
+        //     const data = JSON.parse(event.data);
+        //     count = data.totalCount;
+        //     updateDisplay();
+        // };
         
-        function joinAttendance() {
-            if (!hasJoined && !hasCanceled && count < MAX_CAPACITY) {
-                count++;
-                hasJoined = true;
-                updateDisplay();
-            }
-        }
-        
-        function cancelAttendance() {
-            if (hasJoined && !hasCanceled) {
-                count--;
-                hasCanceled = true;
-                updateDisplay();
-            }
-        }
-        
-        // 초기 화면 설정
-        updateDisplay();
+        // 페이지 로드 시 초기 데이터 로드
+        loadInitialData();
     </script>
 </body>
 </html>
