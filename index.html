@@ -76,7 +76,7 @@
             color: white;
         }
         
-        .button-group button:hover {
+        .button-group button:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
@@ -94,6 +94,14 @@
             height: 20px;
             color: #666;
         }
+
+        .my-status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: #f8f9fa;
+        }
     </style>
 </head>
 <body>
@@ -102,27 +110,32 @@
         <div class="capacity-info">최대 수용 인원: 30명</div>
         <div class="counter" id="counter">0</div>
         <div class="button-group">
-            <button class="cancel-btn" onclick="decrement()" id="cancelBtn">취소</button>
-            <button class="join-btn" onclick="increment()" id="joinBtn">참가</button>
+            <button class="cancel-btn" onclick="cancelAttendance()" id="cancelBtn" disabled>취소</button>
+            <button class="join-btn" onclick="joinAttendance()" id="joinBtn">참가</button>
         </div>
         <div class="status-message" id="statusMessage"></div>
+        <div class="my-status" id="myStatus"></div>
     </div>
 
     <script>
         const MAX_CAPACITY = 30;
-        let count = parseInt(localStorage.getItem('attendanceCount')) || 0;
+        let count = parseInt(localStorage.getItem('totalAttendanceCount')) || 0;
+        let hasJoined = localStorage.getItem('hasJoined') === 'true';
+        let hasCanceled = localStorage.getItem('hasCanceled') === 'true';
         
         function updateDisplay() {
             const counter = document.getElementById('counter');
             const joinBtn = document.getElementById('joinBtn');
             const cancelBtn = document.getElementById('cancelBtn');
             const statusMessage = document.getElementById('statusMessage');
+            const myStatus = document.getElementById('myStatus');
             
+            // 카운터 업데이트
             counter.innerText = count;
             
             // 버튼 상태 관리
-            cancelBtn.disabled = count === 0;
-            joinBtn.disabled = count >= MAX_CAPACITY;
+            joinBtn.disabled = hasJoined || hasCanceled || count >= MAX_CAPACITY;
+            cancelBtn.disabled = !hasJoined || hasCanceled;
             
             // 상태 메시지 업데이트
             if (count >= MAX_CAPACITY) {
@@ -135,21 +148,37 @@
                 statusMessage.textContent = `남은 자리: ${MAX_CAPACITY - count}명`;
                 statusMessage.style.color = '#2ecc71';
             }
+
+            // 내 참가 상태 표시
+            if (hasJoined) {
+                myStatus.textContent = '✅ 참가 신청 완료';
+                myStatus.style.color = '#2ecc71';
+            } else if (hasCanceled) {
+                myStatus.textContent = '❌ 참가 취소 완료';
+                myStatus.style.color = '#e74c3c';
+            } else {
+                myStatus.textContent = '미참가 상태';
+                myStatus.style.color = '#666';
+            }
             
             // 로컬 스토리지에 저장
-            localStorage.setItem('attendanceCount', count);
+            localStorage.setItem('totalAttendanceCount', count);
+            localStorage.setItem('hasJoined', hasJoined);
+            localStorage.setItem('hasCanceled', hasCanceled);
         }
         
-        function increment() {
-            if (count < MAX_CAPACITY) {
+        function joinAttendance() {
+            if (!hasJoined && !hasCanceled && count < MAX_CAPACITY) {
                 count++;
+                hasJoined = true;
                 updateDisplay();
             }
         }
         
-        function decrement() {
-            if (count > 0) {
+        function cancelAttendance() {
+            if (hasJoined && !hasCanceled) {
                 count--;
+                hasCanceled = true;
                 updateDisplay();
             }
         }
