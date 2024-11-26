@@ -119,7 +119,8 @@
 
     <script>
         const MAX_CAPACITY = 30;
-        let count = parseInt(localStorage.getItem('totalAttendanceCount')) || 0;
+        // 초기 상태 설정
+        let count = Math.max(0, parseInt(localStorage.getItem('totalAttendanceCount')) || 0);
         let hasJoined = localStorage.getItem('hasJoined') === 'true';
         
         function updateDisplay() {
@@ -129,7 +130,8 @@
             const statusMessage = document.getElementById('statusMessage');
             const myStatus = document.getElementById('myStatus');
             
-            // 카운터 업데이트
+            // 카운터 업데이트 (음수 방지)
+            count = Math.max(0, count);
             counter.innerText = count;
             
             // 버튼 상태 관리
@@ -171,9 +173,9 @@
         }
         
         function cancelAttendance() {
-            if (hasJoined) {
+            if (hasJoined && count > 0) {
                 count--;
-                hasJoined = false; // 참가 상태를 false로 변경하여 다시 참가할 수 있게 함
+                hasJoined = false;
                 updateDisplay();
             }
         }
