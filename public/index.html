@@ -1,89 +1,287 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>신불산 강의 참가</title>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        
+        .card {
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            padding: 30px 40px;
+            text-align: center;
+            width: 320px;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            color: #2c3e50;
+        }
+        
+        .capacity-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .counter {
+            font-size: 56px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #2c3e50;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+        
+        .button-group button {
+            flex: 1;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .cancel-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .join-btn {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .button-group button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .button-group button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .status-message {
+            margin-top: 15px;
+            font-size: 14px;
+            height: 20px;
+            color: #666;
+        }
 
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/11.0.2/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/11.0.2/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/11.0.2/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/11.0.2/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/11.0.2/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/11.0.2/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/11.0.2/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/11.0.2/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/11.0.2/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/11.0.2/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+        .my-status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: #f8f9fa;
+        }
 
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
-      }
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
-  </head>
-  <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
+</head>
+<body>
+    <div class="loading">
+        <div class="loading-spinner"></div>
     </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
+    <div class="card">
+        <h1>신불산 강의 참석 인원</h1>
+        <div class="capacity-info">최대 수용 인원: 30명</div>
+        <div class="counter" id="counter">-</div>
+        <div class="button-group">
+            <button class="cancel-btn" onclick="cancelAttendance()" id="cancelBtn" disabled>취소</button>
+            <button class="join-btn" onclick="joinAttendance()" id="joinBtn" disabled>참가</button>
+        </div>
+        <div class="status-message" id="statusMessage"></div>
+        <div class="my-status" id="myStatus"></div>
+    </div>
 
     <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+        const MAX_CAPACITY = 30;
+        let count = 0;
+        let hasJoined = false;
+        const loadingScreen = document.querySelector('.loading');
 
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
+        // 로딩 표시 함수
+        function showLoading() {
+            loadingScreen.classList.add('active');
         }
-      });
+
+        function hideLoading() {
+            loadingScreen.classList.remove('active');
+        }
+
+        // 초기 데이터 로드
+        async function loadInitialData() {
+            try {
+                showLoading();
+                // 서버에서 데이터를 받아오는 API 호출
+                // const response = await fetch('/api/attendance');
+                // const data = await response.json();
+                // count = data.totalCount;
+                // hasJoined = data.isJoined;
+
+                // 임시로 서버 응답을 시뮬레이션
+                await new Promise(resolve => setTimeout(resolve, 500));
+                count = 0;
+                hasJoined = false;
+                
+                updateDisplay();
+            } catch (error) {
+                console.error('데이터 로드 중 오류:', error);
+                alert('데이터를 불러오는 중 오류가 발생했습니다.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function joinAttendance() {
+            if (!hasJoined && count < MAX_CAPACITY) {
+                try {
+                    showLoading();
+                    // 서버에 참가 요청
+                    // const response = await fetch('/api/attendance/join', {
+                    //     method: 'POST'
+                    // });
+                    // const data = await response.json();
+                    
+                    // 임시로 서버 응답을 시뮬레이션
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    count++;
+                    hasJoined = true;
+                    
+                    updateDisplay();
+                } catch (error) {
+                    console.error('참가 신청 중 오류:', error);
+                    alert('참가 신청 중 오류가 발생했습니다.');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+
+        async function cancelAttendance() {
+            if (hasJoined) {
+                try {
+                    showLoading();
+                    // 서버에 취소 요청
+                    // const response = await fetch('/api/attendance/cancel', {
+                    //     method: 'POST'
+                    // });
+                    // const data = await response.json();
+                    
+                    // 임시로 서버 응답을 시뮬레이션
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    count--;
+                    hasJoined = false;
+                    
+                    updateDisplay();
+                } catch (error) {
+                    console.error('참가 취소 중 오류:', error);
+                    alert('참가 취소 중 오류가 발생했습니다.');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+        
+        function updateDisplay() {
+            const counter = document.getElementById('counter');
+            const joinBtn = document.getElementById('joinBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const statusMessage = document.getElementById('statusMessage');
+            const myStatus = document.getElementById('myStatus');
+            
+            counter.innerText = count;
+            
+            joinBtn.disabled = hasJoined || count >= MAX_CAPACITY;
+            cancelBtn.disabled = !hasJoined;
+            
+            if (count >= MAX_CAPACITY) {
+                statusMessage.textContent = '정원이 마감되었습니다';
+                statusMessage.style.color = '#e74c3c';
+            } else if (count === 0) {
+                statusMessage.textContent = '참가자를 기다리고 있습니다';
+                statusMessage.style.color = '#666';
+            } else {
+                statusMessage.textContent = `남은 자리: ${MAX_CAPACITY - count}명`;
+                statusMessage.style.color = '#2ecc71';
+            }
+
+            if (hasJoined) {
+                myStatus.textContent = '✅ 참가 신청 완료';
+                myStatus.style.color = '#2ecc71';
+            } else {
+                myStatus.textContent = '미참가 상태';
+                myStatus.style.color = '#666';
+            }
+        }
+
+        // WebSocket 연결 시뮬레이션
+        // const socket = new WebSocket('ws://your-server-url');
+        // socket.onmessage = (event) => {
+        //     const data = JSON.parse(event.data);
+        //     count = data.totalCount;
+        //     updateDisplay();
+        // };
+        
+        // 페이지 로드 시 초기 데이터 로드
+        loadInitialData();
     </script>
-  </body>
+</body>
 </html>
