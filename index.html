@@ -5,96 +5,157 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>신불산 강의 참가</title>
     <style>
-        /* 전체 화면 스타일 */
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Noto Sans KR', Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #f9f9f9;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
-
-        /* 카드 스타일 */
+        
         .card {
             background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 20px 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            padding: 30px 40px;
             text-align: center;
-            width: 300px;
+            width: 320px;
+            transition: transform 0.3s ease;
         }
-
-        /* 제목 스타일 */
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
         .card h1 {
-            margin: 0;
-            font-size: 20px;
-            color: #333;
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            color: #2c3e50;
         }
-
-        /* 카운터 숫자 스타일 */
+        
+        .capacity-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
         .counter {
-            font-size: 48px;
+            font-size: 56px;
             font-weight: bold;
             margin: 20px 0;
-            color: #333;
+            color: #2c3e50;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
         }
-
-        /* 버튼 스타일 */
+        
         .button-group {
             display: flex;
             justify-content: space-between;
+            gap: 15px;
         }
-
+        
         .button-group button {
-            padding: 10px 20px;
+            flex: 1;
+            padding: 12px 20px;
             font-size: 16px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            background-color: #333;
-            color: #fff;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
+            font-weight: 500;
         }
-
+        
+        .cancel-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .join-btn {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
         .button-group button:hover {
-            background-color: #555;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
-
-        /* 버튼 간격 조절 */
-        .button-group button + button {
-            margin-left: 10px;
+        
+        .button-group button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .status-message {
+            margin-top: 15px;
+            font-size: 14px;
+            height: 20px;
+            color: #666;
         }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>참석 인원</h1>
+        <h1>신불산 강의 참석 인원</h1>
+        <div class="capacity-info">최대 수용 인원: 30명</div>
         <div class="counter" id="counter">0</div>
         <div class="button-group">
-            <button onclick="decrement()">취소</button>
-            <button onclick="increment()">참가</button>
+            <button class="cancel-btn" onclick="decrement()" id="cancelBtn">취소</button>
+            <button class="join-btn" onclick="increment()" id="joinBtn">참가</button>
         </div>
+        <div class="status-message" id="statusMessage"></div>
     </div>
 
     <script>
-        // 초기 값
-        let count = 0;
-
-        // 카운터 증가 함수
-        function increment() {
-            count++;
-            document.getElementById('counter').innerText = count;
+        const MAX_CAPACITY = 30;
+        let count = parseInt(localStorage.getItem('attendanceCount')) || 0;
+        
+        function updateDisplay() {
+            const counter = document.getElementById('counter');
+            const joinBtn = document.getElementById('joinBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            counter.innerText = count;
+            
+            // 버튼 상태 관리
+            cancelBtn.disabled = count === 0;
+            joinBtn.disabled = count >= MAX_CAPACITY;
+            
+            // 상태 메시지 업데이트
+            if (count >= MAX_CAPACITY) {
+                statusMessage.textContent = '정원이 마감되었습니다';
+                statusMessage.style.color = '#e74c3c';
+            } else if (count === 0) {
+                statusMessage.textContent = '참가자를 기다리고 있습니다';
+                statusMessage.style.color = '#666';
+            } else {
+                statusMessage.textContent = `남은 자리: ${MAX_CAPACITY - count}명`;
+                statusMessage.style.color = '#2ecc71';
+            }
+            
+            // 로컬 스토리지에 저장
+            localStorage.setItem('attendanceCount', count);
         }
-
-        // 카운터 감소 함수
+        
+        function increment() {
+            if (count < MAX_CAPACITY) {
+                count++;
+                updateDisplay();
+            }
+        }
+        
         function decrement() {
             if (count > 0) {
                 count--;
+                updateDisplay();
             }
-            document.getElementById('counter').innerText = count;
         }
+        
+        // 초기 화면 설정
+        updateDisplay();
     </script>
 </body>
 </html>
