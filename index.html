@@ -119,9 +119,9 @@
 
     <script>
         const MAX_CAPACITY = 30;
-        // 초기 상태 설정
-        let count = Math.max(0, parseInt(localStorage.getItem('totalAttendanceCount')) || 0);
+        let count = parseInt(localStorage.getItem('totalAttendanceCount')) || 0;
         let hasJoined = localStorage.getItem('hasJoined') === 'true';
+        let hasCanceled = localStorage.getItem('hasCanceled') === 'true';
         
         function updateDisplay() {
             const counter = document.getElementById('counter');
@@ -130,13 +130,12 @@
             const statusMessage = document.getElementById('statusMessage');
             const myStatus = document.getElementById('myStatus');
             
-            // 카운터 업데이트 (음수 방지)
-            count = Math.max(0, count);
+            // 카운터 업데이트
             counter.innerText = count;
             
             // 버튼 상태 관리
-            joinBtn.disabled = hasJoined || count >= MAX_CAPACITY;
-            cancelBtn.disabled = !hasJoined;
+            joinBtn.disabled = hasJoined || hasCanceled || count >= MAX_CAPACITY;
+            cancelBtn.disabled = !hasJoined || hasCanceled;
             
             // 상태 메시지 업데이트
             if (count >= MAX_CAPACITY) {
@@ -154,6 +153,9 @@
             if (hasJoined) {
                 myStatus.textContent = '✅ 참가 신청 완료';
                 myStatus.style.color = '#2ecc71';
+            } else if (hasCanceled) {
+                myStatus.textContent = '❌ 참가 취소 완료';
+                myStatus.style.color = '#e74c3c';
             } else {
                 myStatus.textContent = '미참가 상태';
                 myStatus.style.color = '#666';
@@ -162,10 +164,11 @@
             // 로컬 스토리지에 저장
             localStorage.setItem('totalAttendanceCount', count);
             localStorage.setItem('hasJoined', hasJoined);
+            localStorage.setItem('hasCanceled', hasCanceled);
         }
         
         function joinAttendance() {
-            if (!hasJoined && count < MAX_CAPACITY) {
+            if (!hasJoined && !hasCanceled && count < MAX_CAPACITY) {
                 count++;
                 hasJoined = true;
                 updateDisplay();
@@ -173,9 +176,9 @@
         }
         
         function cancelAttendance() {
-            if (hasJoined && count > 0) {
+            if (hasJoined && !hasCanceled) {
                 count--;
-                hasJoined = false;
+                hasCanceled = true;
                 updateDisplay();
             }
         }
