@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>신불산 강의</title>
 
+    <!-- 기존 스타일 코드는 동일하게 유지 -->
     <style>
+        /* 이전 스타일 코드와 동일 */
         body {
             font-family: 'Noto Sans KR', Arial, sans-serif;
             display: flex;
@@ -158,7 +160,7 @@
     <div class="card">
         <h1>신불산 강의</h1>
         <div class="date-info">
-            📅 2024년 1월 13일 (토) 14:00
+            2024년 1월 13일 (토) 14:00
         </div>
         <div class="counter" id="counter">0</div>
         <div class="button-group">
@@ -173,8 +175,14 @@
     <!-- Firebase 초기화 -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } 
-        from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            updateDoc, 
+            onSnapshot 
+        } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 
         // Firebase 설정
         const firebaseConfig = {
@@ -190,14 +198,19 @@
         // Firebase 초기화
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const attendanceRef = doc(db, 'attendance', 'counter');
 
-        // 전역 변수로 설정
+        // Firestore 함수들을 전역으로 노출
+        window.firestore = {
+            getDoc,
+            setDoc,
+            updateDoc,
+            onSnapshot,
+            doc
+        };
+
         window.db = db;
-        window.docRef = doc(db, 'attendance', 'counter');
-        window.getDoc = getDoc;
-        window.setDoc = setDoc;
-        window.updateDoc = updateDoc;
-        window.onSnapshot = onSnapshot;
+        window.docRef = attendanceRef;
     </script>
 
     <!-- 메인 로직 -->
@@ -219,12 +232,12 @@
         async function loadInitialData() {
             try {
                 showLoading();
-                const docSnap = await window.getDoc(window.docRef);
+                const docSnap = await window.firestore.getDoc(window.docRef);
                 
                 if (docSnap.exists()) {
                     count = docSnap.data().count || 0;
                 } else {
-                    await window.setDoc(window.docRef, { count: 0 });
+                    await window.firestore.setDoc(window.docRef, { count: 0 });
                     count = 0;
                 }
                 
@@ -237,11 +250,11 @@
             }
         }
 
-        async function joinAttendance() {
+        window.joinAttendance = async function() {
             if (!hasJoined && count < MAX_CAPACITY) {
                 try {
                     showLoading();
-                    await window.updateDoc(window.docRef, {
+                    await window.firestore.updateDoc(window.docRef, {
                         count: count + 1
                     });
                     hasJoined = true;
@@ -255,11 +268,11 @@
             }
         }
 
-        async function cancelAttendance() {
+        window.cancelAttendance = async function() {
             if (hasJoined) {
                 try {
                     showLoading();
-                    await window.updateDoc(window.docRef, {
+                    await window.firestore.updateDoc(window.docRef, {
                         count: count - 1
                     });
                     hasJoined = false;
@@ -306,7 +319,7 @@
         }
 
         // Firestore 실시간 업데이트 리스너
-        window.onSnapshot(window.docRef, (doc) => {
+        window.firestore.onSnapshot(window.docRef, (doc) => {
             if (doc.exists()) {
                 count = doc.data().count || 0;
                 updateDisplay();
