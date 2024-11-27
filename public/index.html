@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+    <!-- 이전 스타일 코드는 동일하게 유지 -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>신불산 강의 참석</title>
+    <title>신불산 강의</title>
     <style>
+        /* 이전 스타일 코드와 동일 */
         body {
             font-family: 'Noto Sans KR', Arial, sans-serif;
             display: flex;
@@ -38,7 +40,10 @@
         .capacity-info {
             font-size: 14px;
             color: #666;
-            margin-bottom: 15px;
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
         }
 
         .date-info {
@@ -152,8 +157,7 @@
         <div class="loading-spinner"></div>
     </div>
     <div class="card">
-        <h1>신불산 강의 참석 인원</h1>
-        <div class="capacity-info">최대 수용 인원: 300명</div>
+        <h1>신불산 강의</h1>
         <div class="date-info">
             📅 강의 일시: 2024년 1월 13일 (토) 14:00
         </div>
@@ -163,10 +167,12 @@
             <button class="join-btn" onclick="joinAttendance()" id="joinBtn" disabled>참가</button>
         </div>
         <div class="status-message" id="statusMessage"></div>
+        <div class="capacity-info">최대 수용 인원: 300명</div>
         <div class="my-status" id="myStatus"></div>
     </div>
 
     <script>
+        // 이전 JavaScript 코드는 동일하게 유지
         const MAX_CAPACITY = 300;
         let count = 0;
         let hasJoined = false;
