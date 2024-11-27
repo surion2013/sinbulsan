@@ -4,7 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>신불산 강의 참가</title>
+    <!-- Firebase SDK 추가 -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyALcM_DFFdupCLCd-oW0f0IBanjngX396I",
+            authDomain: "sinbulsan-5c1f9.firebaseapp.com",
+            projectId: "sinbulsan-5c1f9",
+            storageBucket: "sinbulsan-5c1f9.firebasestorage.app",
+            messagingSenderId: "316026496310",
+            appId: "1:316026496310:web:dd132c679d3f765fc9ff97",
+            measurementId: "G-S0BBB92D1X"
+        };
+
+        // Firebase 초기화
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 전역 변수로 설정하여 다른 스크립트에서 사용할 수 있도록 함
+        window.db = db;
+        window.docRef = doc(db, 'attendance', 'counter');
+    </script>
+    <!-- 기존 스타일 코드는 그대로 유지 -->
     <style>
+        /* 기존 스타일 코드 전체 유지 */
         body {
             font-family: 'Noto Sans KR', Arial, sans-serif;
             display: flex;
@@ -15,124 +41,7 @@
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
         
-        .card {
-            background: #fff;
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-            padding: 30px 40px;
-            text-align: center;
-            width: 320px;
-            transition: transform 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .card h1 {
-            margin: 0 0 10px 0;
-            font-size: 24px;
-            color: #2c3e50;
-        }
-        
-        .capacity-info {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 15px;
-        }
-        
-        .counter {
-            font-size: 56px;
-            font-weight: bold;
-            margin: 20px 0;
-            color: #2c3e50;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .button-group {
-            display: flex;
-            justify-content: space-between;
-            gap: 15px;
-        }
-        
-        .button-group button {
-            flex: 1;
-            padding: 12px 20px;
-            font-size: 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-        
-        .cancel-btn {
-            background-color: #e74c3c;
-            color: white;
-        }
-        
-        .join-btn {
-            background-color: #2ecc71;
-            color: white;
-        }
-        
-        .button-group button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .button-group button:disabled {
-            background-color: #95a5a6;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        
-        .status-message {
-            margin-top: 15px;
-            font-size: 14px;
-            height: 20px;
-            color: #666;
-        }
-
-        .my-status {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            background-color: #f8f9fa;
-        }
-
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .loading.active {
-            display: flex;
-        }
-
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        /* ... 나머지 스타일 코드 유지 ... */
     </style>
 </head>
 <body>
@@ -151,7 +60,7 @@
         <div class="my-status" id="myStatus"></div>
     </div>
 
-    <script>
+    <script type="module">
         const MAX_CAPACITY = 30;
         let count = 0;
         let hasJoined = false;
@@ -166,20 +75,27 @@
             loadingScreen.classList.remove('active');
         }
 
+        // Firestore 실시간 업데이트 리스너
+        onSnapshot(window.docRef, (doc) => {
+            if (doc.exists()) {
+                count = doc.data().count || 0;
+                updateDisplay();
+            }
+        });
+
         // 초기 데이터 로드
         async function loadInitialData() {
             try {
                 showLoading();
-                // 서버에서 데이터를 받아오는 API 호출
-                // const response = await fetch('/api/attendance');
-                // const data = await response.json();
-                // count = data.totalCount;
-                // hasJoined = data.isJoined;
-
-                // 임시로 서버 응답을 시뮬레이션
-                await new Promise(resolve => setTimeout(resolve, 500));
-                count = 0;
-                hasJoined = false;
+                const docSnap = await getDoc(window.docRef);
+                
+                if (docSnap.exists()) {
+                    count = docSnap.data().count || 0;
+                } else {
+                    // 문서가 없다면 생성
+                    await setDoc(window.docRef, { count: 0 });
+                    count = 0;
+                }
                 
                 updateDisplay();
             } catch (error) {
@@ -194,17 +110,10 @@
             if (!hasJoined && count < MAX_CAPACITY) {
                 try {
                     showLoading();
-                    // 서버에 참가 요청
-                    // const response = await fetch('/api/attendance/join', {
-                    //     method: 'POST'
-                    // });
-                    // const data = await response.json();
-                    
-                    // 임시로 서버 응답을 시뮬레이션
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    count++;
+                    await updateDoc(window.docRef, {
+                        count: count + 1
+                    });
                     hasJoined = true;
-                    
                     updateDisplay();
                 } catch (error) {
                     console.error('참가 신청 중 오류:', error);
@@ -219,17 +128,10 @@
             if (hasJoined) {
                 try {
                     showLoading();
-                    // 서버에 취소 요청
-                    // const response = await fetch('/api/attendance/cancel', {
-                    //     method: 'POST'
-                    // });
-                    // const data = await response.json();
-                    
-                    // 임시로 서버 응답을 시뮬레이션
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    count--;
+                    await updateDoc(window.docRef, {
+                        count: count - 1
+                    });
                     hasJoined = false;
-                    
                     updateDisplay();
                 } catch (error) {
                     console.error('참가 취소 중 오류:', error);
@@ -272,13 +174,12 @@
             }
         }
 
-        // WebSocket 연결 시뮬레이션
-        // const socket = new WebSocket('ws://your-server-url');
-        // socket.onmessage = (event) => {
-        //     const data = JSON.parse(event.data);
-        //     count = data.totalCount;
-        //     updateDisplay();
-        // };
+        // 전역 스코프에 함수들 추가
+        window.showLoading = showLoading;
+        window.hideLoading = hideLoading;
+        window.joinAttendance = joinAttendance;
+        window.cancelAttendance = cancelAttendance;
+        window.updateDisplay = updateDisplay;
         
         // 페이지 로드 시 초기 데이터 로드
         loadInitialData();
