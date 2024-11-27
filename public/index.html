@@ -3,31 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>신불산 강의 참가</title>
-    <!-- Firebase SDK 추가 -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-        import { getFirestore, doc, setDoc, updateDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-
-        // Firebase 설정 (환경변수로 대체하거나 서버에서 처리 권장)
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY", // 환경변수로 대체 필요
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID",
-            measurementId: "YOUR_MEASUREMENT_ID"
-        };
-
-        // Firebase 초기화
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // 전역 변수 설정
-        window.db = db;
-        window.docRef = doc(db, 'attendance', 'counter');
-    </script>
+    <title>신불산 강의 참석</title>
     <style>
         body {
             font-family: 'Noto Sans KR', Arial, sans-serif;
@@ -38,65 +14,150 @@
             margin: 0;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
+        
         .card {
             background: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            padding: 30px 40px;
             text-align: center;
-            width: 300px;
+            width: 320px;
+            transition: transform 0.3s ease;
         }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            color: #2c3e50;
+        }
+        
+        .capacity-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .date-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .counter {
+            font-size: 56px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #2c3e50;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .button-group button {
+            flex: 1;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .cancel-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .join-btn {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .button-group button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            opacity: 0.9;
+        }
+        
+        .button-group button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .status-message {
+            margin-top: 15px;
+            font-size: 14px;
+            height: 20px;
+            color: #666;
+        }
+
+        .my-status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+        }
+
         .loading {
-            display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background: rgba(255, 255, 255, 0.8);
-            z-index: 10;
+            display: none;
             justify-content: center;
             align-items: center;
+            z-index: 1000;
         }
+
         .loading.active {
             display: flex;
         }
-        .button-group button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            margin: 5px;
-            cursor: pointer;
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
-        .join-btn {
-            background: #2ecc71;
-            color: white;
-        }
-        .join-btn:disabled {
-            background: #95a5a6;
-            cursor: not-allowed;
-        }
-        .cancel-btn {
-            background: #e74c3c;
-            color: white;
-        }
-        .cancel-btn:disabled {
-            background: #95a5a6;
-            cursor: not-allowed;
-        }
-        .status-message, .my-status {
-            margin: 10px 0;
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div class="loading">
-        <div>Loading...</div>
+        <div class="loading-spinner"></div>
     </div>
     <div class="card">
         <h1>신불산 강의 참석 인원</h1>
         <div class="capacity-info">최대 수용 인원: 300명</div>
-        <div class="counter" id="counter">-</div>
+        <div class="date-info">
+            📅 강의 일시: 2024년 1월 13일 (토) 14:00
+        </div>
+        <div class="counter" id="counter">0</div>
         <div class="button-group">
             <button class="cancel-btn" onclick="cancelAttendance()" id="cancelBtn" disabled>취소</button>
             <button class="join-btn" onclick="joinAttendance()" id="joinBtn" disabled>참가</button>
@@ -105,8 +166,8 @@
         <div class="my-status" id="myStatus"></div>
     </div>
 
-    <script type="module">
-        const MAX_CAPACITY = 300; // 최대 참석 인원을 300명으로 설정
+    <script>
+        const MAX_CAPACITY = 300;
         let count = 0;
         let hasJoined = false;
         const loadingScreen = document.querySelector('.loading');
@@ -119,28 +180,23 @@
             loadingScreen.classList.remove('active');
         }
 
-        // Firestore 실시간 업데이트 리스너
-        onSnapshot(window.docRef, (doc) => {
-            if (doc.exists()) {
-                count = doc.data().count || 0;
-                updateDisplay();
-            }
-        });
-
+        // 초기 데이터 로드
         async function loadInitialData() {
             try {
                 showLoading();
                 const docSnap = await getDoc(window.docRef);
+                
                 if (docSnap.exists()) {
                     count = docSnap.data().count || 0;
                 } else {
                     await setDoc(window.docRef, { count: 0 });
                     count = 0;
                 }
+                
                 updateDisplay();
             } catch (error) {
                 console.error('데이터 로드 중 오류:', error);
-                alert('데이터를 불러오는 중 문제가 발생했습니다.');
+                alert('데이터를 불러오는 중 오류가 발생했습니다.');
             } finally {
                 hideLoading();
             }
@@ -150,11 +206,14 @@
             if (!hasJoined && count < MAX_CAPACITY) {
                 try {
                     showLoading();
-                    await updateDoc(window.docRef, { count: count + 1 });
+                    await updateDoc(window.docRef, {
+                        count: count + 1
+                    });
                     hasJoined = true;
+                    updateDisplay();
                 } catch (error) {
                     console.error('참가 신청 중 오류:', error);
-                    alert('참가 신청 중 문제가 발생했습니다.');
+                    alert('참가 신청 중 오류가 발생했습니다.');
                 } finally {
                     hideLoading();
                 }
@@ -165,42 +224,61 @@
             if (hasJoined) {
                 try {
                     showLoading();
-                    await updateDoc(window.docRef, { count: count - 1 });
+                    await updateDoc(window.docRef, {
+                        count: count - 1
+                    });
                     hasJoined = false;
+                    updateDisplay();
                 } catch (error) {
                     console.error('참가 취소 중 오류:', error);
-                    alert('참가 취소 중 문제가 발생했습니다.');
+                    alert('참가 취소 중 오류가 발생했습니다.');
                 } finally {
                     hideLoading();
                 }
             }
         }
-
+        
         function updateDisplay() {
             const counter = document.getElementById('counter');
             const joinBtn = document.getElementById('joinBtn');
             const cancelBtn = document.getElementById('cancelBtn');
             const statusMessage = document.getElementById('statusMessage');
             const myStatus = document.getElementById('myStatus');
-
+            
             counter.innerText = count;
-
+            
             joinBtn.disabled = hasJoined || count >= MAX_CAPACITY;
             cancelBtn.disabled = !hasJoined;
-
+            
             if (count >= MAX_CAPACITY) {
                 statusMessage.textContent = '정원이 마감되었습니다';
                 statusMessage.style.color = '#e74c3c';
+            } else if (count === 0) {
+                statusMessage.textContent = '참가자를 기다리고 있습니다';
+                statusMessage.style.color = '#666';
             } else {
                 statusMessage.textContent = `남은 자리: ${MAX_CAPACITY - count}명`;
                 statusMessage.style.color = '#2ecc71';
             }
 
-            myStatus.textContent = hasJoined ? '✅ 참가 신청 완료' : '미참가 상태';
-            myStatus.style.color = hasJoined ? '#2ecc71' : '#666';
+            if (hasJoined) {
+                myStatus.textContent = '✅ 참가 신청 완료';
+                myStatus.style.color = '#2ecc71';
+            } else {
+                myStatus.textContent = '미참가 상태';
+                myStatus.style.color = '#666';
+            }
         }
 
-        // 초기 데이터 로드
+        // Firestore 실시간 업데이트 리스너
+        onSnapshot(window.docRef, (doc) => {
+            if (doc.exists()) {
+                count = doc.data().count || 0;
+                updateDisplay();
+            }
+        });
+        
+        // 페이지 로드 시 초기 데이터 로드
         loadInitialData();
     </script>
 </body>
