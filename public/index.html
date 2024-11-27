@@ -7,30 +7,28 @@
     <!-- Firebase SDK 추가 -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        import { getFirestore, doc, setDoc, updateDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
-        // Firebase 설정
+        // Firebase 설정 (환경변수로 대체하거나 서버에서 처리 권장)
         const firebaseConfig = {
-            apiKey: "AIzaSyALcM_DFFdupCLCd-oW0f0IBanjngX396I",
-            authDomain: "sinbulsan-5c1f9.firebaseapp.com",
-            projectId: "sinbulsan-5c1f9",
-            storageBucket: "sinbulsan-5c1f9.firebasestorage.app",
-            messagingSenderId: "316026496310",
-            appId: "1:316026496310:web:dd132c679d3f765fc9ff97",
-            measurementId: "G-S0BBB92D1X"
+            apiKey: "YOUR_API_KEY", // 환경변수로 대체 필요
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID",
+            measurementId: "YOUR_MEASUREMENT_ID"
         };
 
         // Firebase 초기화
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 전역 변수로 설정하여 다른 스크립트에서 사용할 수 있도록 함
+        // 전역 변수 설정
         window.db = db;
         window.docRef = doc(db, 'attendance', 'counter');
     </script>
-    <!-- 기존 스타일 코드는 그대로 유지 -->
     <style>
-        /* 기존 스타일 코드 전체 유지 */
         body {
             font-family: 'Noto Sans KR', Arial, sans-serif;
             display: flex;
@@ -40,13 +38,60 @@
             margin: 0;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
-        
-        /* ... 나머지 스타일 코드 유지 ... */
+        .card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 300px;
+        }
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 10;
+            justify-content: center;
+            align-items: center;
+        }
+        .loading.active {
+            display: flex;
+        }
+        .button-group button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .join-btn {
+            background: #2ecc71;
+            color: white;
+        }
+        .join-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        .cancel-btn {
+            background: #e74c3c;
+            color: white;
+        }
+        .cancel-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        .status-message, .my-status {
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
     <div class="loading">
-        <div class="loading-spinner"></div>
+        <div>Loading...</div>
     </div>
     <div class="card">
         <h1>신불산 강의 참석 인원</h1>
@@ -61,12 +106,11 @@
     </div>
 
     <script type="module">
-        const MAX_CAPACITY = 30;
+        const MAX_CAPACITY = 300; // 최대 참석 인원을 300명으로 설정
         let count = 0;
         let hasJoined = false;
         const loadingScreen = document.querySelector('.loading');
 
-        // 로딩 표시 함수
         function showLoading() {
             loadingScreen.classList.add('active');
         }
@@ -83,24 +127,20 @@
             }
         });
 
-        // 초기 데이터 로드
         async function loadInitialData() {
             try {
                 showLoading();
                 const docSnap = await getDoc(window.docRef);
-                
                 if (docSnap.exists()) {
                     count = docSnap.data().count || 0;
                 } else {
-                    // 문서가 없다면 생성
                     await setDoc(window.docRef, { count: 0 });
                     count = 0;
                 }
-                
                 updateDisplay();
             } catch (error) {
                 console.error('데이터 로드 중 오류:', error);
-                alert('데이터를 불러오는 중 오류가 발생했습니다.');
+                alert('데이터를 불러오는 중 문제가 발생했습니다.');
             } finally {
                 hideLoading();
             }
@@ -110,14 +150,11 @@
             if (!hasJoined && count < MAX_CAPACITY) {
                 try {
                     showLoading();
-                    await updateDoc(window.docRef, {
-                        count: count + 1
-                    });
+                    await updateDoc(window.docRef, { count: count + 1 });
                     hasJoined = true;
-                    updateDisplay();
                 } catch (error) {
                     console.error('참가 신청 중 오류:', error);
-                    alert('참가 신청 중 오류가 발생했습니다.');
+                    alert('참가 신청 중 문제가 발생했습니다.');
                 } finally {
                     hideLoading();
                 }
@@ -128,60 +165,42 @@
             if (hasJoined) {
                 try {
                     showLoading();
-                    await updateDoc(window.docRef, {
-                        count: count - 1
-                    });
+                    await updateDoc(window.docRef, { count: count - 1 });
                     hasJoined = false;
-                    updateDisplay();
                 } catch (error) {
                     console.error('참가 취소 중 오류:', error);
-                    alert('참가 취소 중 오류가 발생했습니다.');
+                    alert('참가 취소 중 문제가 발생했습니다.');
                 } finally {
                     hideLoading();
                 }
             }
         }
-        
+
         function updateDisplay() {
             const counter = document.getElementById('counter');
             const joinBtn = document.getElementById('joinBtn');
             const cancelBtn = document.getElementById('cancelBtn');
             const statusMessage = document.getElementById('statusMessage');
             const myStatus = document.getElementById('myStatus');
-            
+
             counter.innerText = count;
-            
+
             joinBtn.disabled = hasJoined || count >= MAX_CAPACITY;
             cancelBtn.disabled = !hasJoined;
-            
+
             if (count >= MAX_CAPACITY) {
                 statusMessage.textContent = '정원이 마감되었습니다';
                 statusMessage.style.color = '#e74c3c';
-            } else if (count === 0) {
-                statusMessage.textContent = '참가자를 기다리고 있습니다';
-                statusMessage.style.color = '#666';
             } else {
                 statusMessage.textContent = `남은 자리: ${MAX_CAPACITY - count}명`;
                 statusMessage.style.color = '#2ecc71';
             }
 
-            if (hasJoined) {
-                myStatus.textContent = '✅ 참가 신청 완료';
-                myStatus.style.color = '#2ecc71';
-            } else {
-                myStatus.textContent = '미참가 상태';
-                myStatus.style.color = '#666';
-            }
+            myStatus.textContent = hasJoined ? '✅ 참가 신청 완료' : '미참가 상태';
+            myStatus.style.color = hasJoined ? '#2ecc71' : '#666';
         }
 
-        // 전역 스코프에 함수들 추가
-        window.showLoading = showLoading;
-        window.hideLoading = hideLoading;
-        window.joinAttendance = joinAttendance;
-        window.cancelAttendance = cancelAttendance;
-        window.updateDisplay = updateDisplay;
-        
-        // 페이지 로드 시 초기 데이터 로드
+        // 초기 데이터 로드
         loadInitialData();
     </script>
 </body>
