@@ -5,34 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>신불산 강의</title>
 
-    <!-- Firebase SDK 추가 -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } 
-        from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
-
-        // Firebase 설정
-        const firebaseConfig = {
-            apiKey: "AIzaSyALcM_DFFdupCLCd-oW0f0IBanjngX396I",
-            authDomain: "sinbulsan-5c1f9.firebaseapp.com",
-            projectId: "sinbulsan-5c1f9",
-            storageBucket: "sinbulsan-5c1f9.firebasestorage.app",
-            messagingSenderId: "316026496310",
-            appId: "1:316026496310:web:dd132c679d3f765fc9ff97",
-            measurementId: "G-S0BBB92D1X"
-        };
-
-        // Firebase 초기화
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // 전역 변수로 설정
-        window.db = db;
-        window.docRef = doc(db, 'attendance', 'counter');
-    </script>
-
     <style>
-        /* 이전 스타일 코드와 동일 */
         body {
             font-family: 'Noto Sans KR', Arial, sans-serif;
             display: flex;
@@ -185,7 +158,7 @@
     <div class="card">
         <h1>신불산 강의</h1>
         <div class="date-info">
-            📅 강의 일시: 2024년 1월 13일 (토) 14:00
+            📅 2024년 1월 13일 (토) 14:00
         </div>
         <div class="counter" id="counter">0</div>
         <div class="button-group">
@@ -197,7 +170,38 @@
         <div class="my-status" id="myStatus"></div>
     </div>
 
+    <!-- Firebase 초기화 -->
     <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } 
+        from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyALcM_DFFdupCLCd-oW0f0IBanjngX396I",
+            authDomain: "sinbulsan-5c1f9.firebaseapp.com",
+            projectId: "sinbulsan-5c1f9",
+            storageBucket: "sinbulsan-5c1f9.firebasestorage.app",
+            messagingSenderId: "316026496310",
+            appId: "1:316026496310:web:dd132c679d3f765fc9ff97",
+            measurementId: "G-S0BBB92D1X"
+        };
+
+        // Firebase 초기화
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 전역 변수로 설정
+        window.db = db;
+        window.docRef = doc(db, 'attendance', 'counter');
+        window.getDoc = getDoc;
+        window.setDoc = setDoc;
+        window.updateDoc = updateDoc;
+        window.onSnapshot = onSnapshot;
+    </script>
+
+    <!-- 메인 로직 -->
+    <script>
         const MAX_CAPACITY = 300;
         let count = 0;
         let hasJoined = false;
@@ -215,12 +219,12 @@
         async function loadInitialData() {
             try {
                 showLoading();
-                const docSnap = await getDoc(window.docRef);
+                const docSnap = await window.getDoc(window.docRef);
                 
                 if (docSnap.exists()) {
                     count = docSnap.data().count || 0;
                 } else {
-                    await setDoc(window.docRef, { count: 0 });
+                    await window.setDoc(window.docRef, { count: 0 });
                     count = 0;
                 }
                 
@@ -237,7 +241,7 @@
             if (!hasJoined && count < MAX_CAPACITY) {
                 try {
                     showLoading();
-                    await updateDoc(window.docRef, {
+                    await window.updateDoc(window.docRef, {
                         count: count + 1
                     });
                     hasJoined = true;
@@ -255,7 +259,7 @@
             if (hasJoined) {
                 try {
                     showLoading();
-                    await updateDoc(window.docRef, {
+                    await window.updateDoc(window.docRef, {
                         count: count - 1
                     });
                     hasJoined = false;
@@ -302,19 +306,12 @@
         }
 
         // Firestore 실시간 업데이트 리스너
-        onSnapshot(window.docRef, (doc) => {
+        window.onSnapshot(window.docRef, (doc) => {
             if (doc.exists()) {
                 count = doc.data().count || 0;
                 updateDisplay();
             }
         });
-
-        // 함수들을 전역으로 노출
-        window.showLoading = showLoading;
-        window.hideLoading = hideLoading;
-        window.joinAttendance = joinAttendance;
-        window.cancelAttendance = cancelAttendance;
-        window.updateDisplay = updateDisplay;
         
         // 페이지 로드 시 초기 데이터 로드
         loadInitialData();
