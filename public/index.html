@@ -1,10 +1,36 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <!-- 이전 스타일 코드는 동일하게 유지 -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>신불산 강의</title>
+
+    <!-- Firebase SDK 추가 -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } 
+        from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyALcM_DFFdupCLCd-oW0f0IBanjngX396I",
+            authDomain: "sinbulsan-5c1f9.firebaseapp.com",
+            projectId: "sinbulsan-5c1f9",
+            storageBucket: "sinbulsan-5c1f9.firebasestorage.app",
+            messagingSenderId: "316026496310",
+            appId: "1:316026496310:web:dd132c679d3f765fc9ff97",
+            measurementId: "G-S0BBB92D1X"
+        };
+
+        // Firebase 초기화
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 전역 변수로 설정
+        window.db = db;
+        window.docRef = doc(db, 'attendance', 'counter');
+    </script>
+
     <style>
         /* 이전 스타일 코드와 동일 */
         body {
@@ -164,15 +190,14 @@
         <div class="counter" id="counter">0</div>
         <div class="button-group">
             <button class="cancel-btn" onclick="cancelAttendance()" id="cancelBtn" disabled>취소</button>
-            <button class="join-btn" onclick="joinAttendance()" id="joinBtn" disabled>참가</button>
+            <button class="join-btn" onclick="joinAttendance()" id="joinBtn">참가</button>
         </div>
         <div class="status-message" id="statusMessage"></div>
         <div class="capacity-info">최대 수용 인원: 300명</div>
         <div class="my-status" id="myStatus"></div>
     </div>
 
-    <script>
-        // 이전 JavaScript 코드는 동일하게 유지
+    <script type="module">
         const MAX_CAPACITY = 300;
         let count = 0;
         let hasJoined = false;
@@ -283,6 +308,13 @@
                 updateDisplay();
             }
         });
+
+        // 함수들을 전역으로 노출
+        window.showLoading = showLoading;
+        window.hideLoading = hideLoading;
+        window.joinAttendance = joinAttendance;
+        window.cancelAttendance = cancelAttendance;
+        window.updateDisplay = updateDisplay;
         
         // 페이지 로드 시 초기 데이터 로드
         loadInitialData();
