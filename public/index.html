@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>신불산 강의</title>
+    
+    <!-- Firebase SDK를 CDN으로 추가 -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 
-    <!-- 기존 스타일 코드는 동일하게 유지 -->
     <style>
         /* 이전 스타일 코드와 동일 */
         body {
@@ -172,18 +175,7 @@
         <div class="my-status" id="myStatus"></div>
     </div>
 
-    <!-- Firebase 초기화 -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
-        import { 
-            getFirestore, 
-            doc, 
-            setDoc, 
-            getDoc, 
-            updateDoc, 
-            onSnapshot 
-        } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
-
+    <script>
         // Firebase 설정
         const firebaseConfig = {
             apiKey: "AIzaSyALcM_DFFdupCLCd-oW0f0IBanjngX396I",
@@ -196,25 +188,10 @@
         };
 
         // Firebase 초기화
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const attendanceRef = doc(db, 'attendance', 'counter');
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const attendanceRef = db.collection('attendance').doc('counter');
 
-        // Firestore 함수들을 전역으로 노출
-        window.firestore = {
-            getDoc,
-            setDoc,
-            updateDoc,
-            onSnapshot,
-            doc
-        };
-
-        window.db = db;
-        window.docRef = attendanceRef;
-    </script>
-
-    <!-- 메인 로직 -->
-    <script>
         const MAX_CAPACITY = 300;
         let count = 0;
         let hasJoined = false;
@@ -232,12 +209,12 @@
         async function loadInitialData() {
             try {
                 showLoading();
-                const docSnap = await window.firestore.getDoc(window.docRef);
+                const doc = await attendanceRef.get();
                 
-                if (docSnap.exists()) {
-                    count = docSnap.data().count || 0;
+                if (doc.exists) {
+                    count = doc.data().count || 0;
                 } else {
-                    await window.firestore.setDoc(window.docRef, { count: 0 });
+                    await attendanceRef.set({ count: 0 });
                     count = 0;
                 }
                 
@@ -250,11 +227,11 @@
             }
         }
 
-        window.joinAttendance = async function() {
+        async function joinAttendance() {
             if (!hasJoined && count < MAX_CAPACITY) {
                 try {
                     showLoading();
-                    await window.firestore.updateDoc(window.docRef, {
+                    await attendanceRef.update({
                         count: count + 1
                     });
                     hasJoined = true;
@@ -268,11 +245,11 @@
             }
         }
 
-        window.cancelAttendance = async function() {
+        async function cancelAttendance() {
             if (hasJoined) {
                 try {
                     showLoading();
-                    await window.firestore.updateDoc(window.docRef, {
+                    await attendanceRef.update({
                         count: count - 1
                     });
                     hasJoined = false;
@@ -319,8 +296,8 @@
         }
 
         // Firestore 실시간 업데이트 리스너
-        window.firestore.onSnapshot(window.docRef, (doc) => {
-            if (doc.exists()) {
+        attendanceRef.onSnapshot((doc) => {
+            if (doc.exists) {
                 count = doc.data().count || 0;
                 updateDisplay();
             }
