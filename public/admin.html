@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>신불산 강의 관리자 페이지</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <style>
+        /* 이전 스타일 유지 */
         * {
             margin: 0;
             padding: 0;
@@ -94,13 +97,13 @@
         }
 
         .modal {
+            display: none;
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: none;
+            background: rgba(0, 0, 0, 0.5);
             align-items: center;
             justify-content: center;
         }
@@ -113,45 +116,42 @@
             max-width: 400px;
         }
 
-        .modal-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 12px;
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
         }
 
-        .modal-text {
-            margin-bottom: 24px;
-            color: #4b5563;
-            font-size: 14px;
-        }
-
-        .modal-buttons {
+        .loading.active {
             display: flex;
-            justify-content: flex-end;
-            gap: 8px;
         }
 
-        .modal-btn {
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
-        .modal-btn-cancel {
-            background-color: #f3f4f6;
-            border: none;
-            color: #111827;
-        }
-
-        .modal-btn-confirm {
-            background-color: #111827;
-            border: none;
-            color: white;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
+    <div class="loading">
+        <div class="loading-spinner"></div>
+    </div>
     <div class="container">
         <div class="header">
             <h1 class="title">
@@ -187,7 +187,7 @@
 
         <div class="form-group">
             <label class="form-label">최대 수용 인원</label>
-            <input type="number" id="maxParticipants" class="form-input">
+            <input type="number" id="maxParticipants" class="form-input" value="300" readonly>
         </div>
 
         <div class="grid">
@@ -215,16 +215,29 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script>
         // Firebase 설정
         const firebaseConfig = {
-            // 여기에 Firebase 설정을 넣으세요
+            apiKey: "AIzaSyALcM_DFFdupCLCd-oW0f0IBanjngX396I",
+            authDomain: "sinbulsan-5c1f9.firebaseapp.com",
+            projectId: "sinbulsan-5c1f9",
+            storageBucket: "sinbulsan-5c1f9.firebasestorage.app",
+            messagingSenderId: "316026496310",
+            appId: "1:316026496310:web:dd132c679d3f765fc9ff97",
+            measurementId: "G-S0BBB92D1X"
         };
         
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const attendanceRef = db.collection('attendance').doc('counter');
+
+        const loadingScreen = document.querySelector('.loading');
+        function showLoading() {
+            loadingScreen.classList.add('active');
+        }
+        function hideLoading() {
+            loadingScreen.classList.remove('active');
+        }
 
         // 요소 가져오기
         const dateInput = document.getElementById('dateInput');
@@ -241,62 +254,58 @@
         // 초기 데이터 로드
         async function loadData() {
             try {
-                const doc = await db.collection('lectures').doc('current').get();
+                showLoading();
+                const doc = await attendanceRef.get();
                 if (doc.exists) {
                     const data = doc.data();
-                    dateInput.value = data.date;
-                    timeInput.value = data.time;
-                    maxParticipants.value = data.maxParticipants;
-                    currentParticipants.value = data.currentParticipants;
-                    remainingSeats.value = data.remainingSeats;
+                    currentParticipants.value = data.count || 0;
+                    remainingSeats.value = 300 - (data.count || 0);
                 }
             } catch (error) {
                 console.error("Error loading data: ", error);
+            } finally {
+                hideLoading();
             }
         }
 
-        // 저장 기능
-        saveBtn.addEventListener('click', async () => {
-            try {
-                await db.collection('lectures').doc('current').set({
-                    date: dateInput.value,
-                    time: timeInput.value,
-                    maxParticipants: parseInt(maxParticipants.value),
-                    currentParticipants: parseInt(currentParticipants.value),
-                    remainingSeats: parseInt(remainingSeats.value)
-                });
-                alert('저장되었습니다.');
-            } catch (error) {
-                console.error("Error saving data: ", error);
-                alert('저장 중 오류가 발생했습니다.');
-            }
-        });
+        // 현재 날짜와 시간을 기본값으로 설정
+        const now = new Date();
+        dateInput.value = now.toISOString().split('T')[0];
+        timeInput.value = '14:00';
 
-        // 초기화 모달 표시
+        // 참가자 초기화
         resetBtn.addEventListener('click', () => {
             resetModal.style.display = 'flex';
         });
 
-        // 초기화 취소
         cancelReset.addEventListener('click', () => {
             resetModal.style.display = 'none';
         });
 
-        // 초기화 확인
         confirmReset.addEventListener('click', async () => {
             try {
-                const max = parseInt(maxParticipants.value);
-                await db.collection('lectures').doc('current').update({
-                    currentParticipants: 0,
-                    remainingSeats: max
+                showLoading();
+                await attendanceRef.update({
+                    count: 0
                 });
                 currentParticipants.value = 0;
-                remainingSeats.value = max;
+                remainingSeats.value = 300;
                 resetModal.style.display = 'none';
                 alert('참가자 수가 초기화되었습니다.');
             } catch (error) {
                 console.error("Error resetting participants: ", error);
                 alert('초기화 중 오류가 발생했습니다.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // 실시간 업데이트 리스너
+        attendanceRef.onSnapshot((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                currentParticipants.value = data.count || 0;
+                remainingSeats.value = 300 - (data.count || 0);
             }
         });
 
