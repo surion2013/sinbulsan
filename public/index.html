@@ -3,308 +3,305 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>신불산 강의</title>
-    
-    <!-- Firebase SDK를 CDN으로 추가 -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
-
+    <title>신불산 강의 관리자 페이지</title>
     <style>
-        /* 이전 스타일 코드와 동일 */
-        body {
-            font-family: 'Noto Sans KR', Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        * {
             margin: 0;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        }
-        
-        .card {
-            background: #fff;
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-            padding: 30px 40px;
-            text-align: center;
-            width: 320px;
-            transition: transform 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .card h1 {
-            margin: 0 0 10px 0;
-            font-size: 24px;
-            color: #2c3e50;
-        }
-        
-        .capacity-info {
-            font-size: 14px;
-            color: #666;
-            margin: 15px 0;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
-        .date-info {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 20px;
-            padding: 10px;
+        body {
             background-color: #f8f9fa;
-            border-radius: 8px;
+            padding: 20px;
         }
-        
-        .counter {
-            font-size: 56px;
-            font-weight: bold;
-            margin: 20px 0;
-            color: #2c3e50;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
         }
-        
-        .button-group {
+
+        .header {
             display: flex;
             justify-content: space-between;
-            gap: 15px;
-            margin-top: 20px;
+            align-items: center;
+            margin-bottom: 40px;
         }
-        
-        .button-group button {
-            flex: 1;
-            padding: 12px 20px;
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .reset-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #111827;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
             font-size: 16px;
+            background-color: white;
+        }
+
+        .form-input:disabled {
+            background-color: #f8f9fa;
+            color: #6b7280;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 16px;
+            background-color: #111827;
+            color: white;
             border: none;
             border-radius: 8px;
+            font-size: 16px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-        
-        .cancel-btn {
-            background-color: #e74c3c;
-            color: white;
-        }
-        
-        .join-btn {
-            background-color: #2ecc71;
-            color: white;
-        }
-        
-        .button-group button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            opacity: 0.9;
-        }
-        
-        .button-group button:disabled {
-            background-color: #95a5a6;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        
-        .status-message {
-            margin-top: 15px;
-            font-size: 14px;
-            height: 20px;
-            color: #666;
+            margin-top: 20px;
         }
 
-        .my-status {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-        }
-
-        .loading {
+        .modal {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.8);
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
             display: none;
-            justify-content: center;
             align-items: center;
-            z-index: 1000;
+            justify-content: center;
         }
 
-        .loading.active {
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .modal-text {
+            margin-bottom: 24px;
+            color: #4b5563;
+            font-size: 14px;
+        }
+
+        .modal-buttons {
             display: flex;
+            justify-content: flex-end;
+            gap: 8px;
         }
 
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .modal-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .modal-btn-cancel {
+            background-color: #f3f4f6;
+            border: none;
+            color: #111827;
+        }
+
+        .modal-btn-confirm {
+            background-color: #111827;
+            border: none;
+            color: white;
         }
     </style>
 </head>
 <body>
-    <div class="loading">
-        <div class="loading-spinner"></div>
-    </div>
-    <div class="card">
-        <h1>신불산 강의</h1>
-        <div class="date-info">
-            2024년 1월 13일 (토) 14:00
+    <div class="container">
+        <div class="header">
+            <h1 class="title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                신불산 강의 관리자 페이지
+            </h1>
+            <button id="resetBtn" class="reset-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6"/>
+                    <path d="M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+                    <path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+                참가자 초기화
+            </button>
         </div>
-        <div class="counter" id="counter">0</div>
-        <div class="button-group">
-            <button class="cancel-btn" onclick="cancelAttendance()" id="cancelBtn" disabled>취소</button>
-            <button class="join-btn" onclick="joinAttendance()" id="joinBtn">참가</button>
+
+        <div class="grid">
+            <div class="form-group">
+                <label class="form-label">날짜</label>
+                <input type="date" id="dateInput" class="form-input">
+            </div>
+            <div class="form-group">
+                <label class="form-label">시간</label>
+                <input type="time" id="timeInput" class="form-input">
+            </div>
         </div>
-        <div class="status-message" id="statusMessage"></div>
-        <div class="capacity-info">최대 수용 인원: 300명</div>
-        <div class="my-status" id="myStatus"></div>
+
+        <div class="form-group">
+            <label class="form-label">최대 수용 인원</label>
+            <input type="number" id="maxParticipants" class="form-input">
+        </div>
+
+        <div class="grid">
+            <div class="form-group">
+                <label class="form-label">현재 참가자</label>
+                <input type="number" id="currentParticipants" class="form-input" disabled>
+            </div>
+            <div class="form-group">
+                <label class="form-label">남은 자리</label>
+                <input type="number" id="remainingSeats" class="form-input" disabled>
+            </div>
+        </div>
+
+        <button id="saveBtn" class="save-btn">저장</button>
     </div>
 
+    <div id="resetModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">참가자 초기화</h3>
+            <p class="modal-text">정말로 참가자 수를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+            <div class="modal-buttons">
+                <button id="cancelReset" class="modal-btn modal-btn-cancel">취소</button>
+                <button id="confirmReset" class="modal-btn modal-btn-confirm">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script>
         // Firebase 설정
         const firebaseConfig = {
-            apiKey: "AIzaSyALcM_DFFdupCLCd-oW0f0IBanjngX396I",
-            authDomain: "sinbulsan-5c1f9.firebaseapp.com",
-            projectId: "sinbulsan-5c1f9",
-            storageBucket: "sinbulsan-5c1f9.firebasestorage.app",
-            messagingSenderId: "316026496310",
-            appId: "1:316026496310:web:dd132c679d3f765fc9ff97",
-            measurementId: "G-S0BBB92D1X"
+            // 여기에 Firebase 설정을 넣으세요
         };
-
-        // Firebase 초기화
+        
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const attendanceRef = db.collection('attendance').doc('counter');
 
-        const MAX_CAPACITY = 300;
-        let count = 0;
-        let hasJoined = false;
-        const loadingScreen = document.querySelector('.loading');
-
-        function showLoading() {
-            loadingScreen.classList.add('active');
-        }
-
-        function hideLoading() {
-            loadingScreen.classList.remove('active');
-        }
+        // 요소 가져오기
+        const dateInput = document.getElementById('dateInput');
+        const timeInput = document.getElementById('timeInput');
+        const maxParticipants = document.getElementById('maxParticipants');
+        const currentParticipants = document.getElementById('currentParticipants');
+        const remainingSeats = document.getElementById('remainingSeats');
+        const resetBtn = document.getElementById('resetBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const resetModal = document.getElementById('resetModal');
+        const confirmReset = document.getElementById('confirmReset');
+        const cancelReset = document.getElementById('cancelReset');
 
         // 초기 데이터 로드
-        async function loadInitialData() {
+        async function loadData() {
             try {
-                showLoading();
-                const doc = await attendanceRef.get();
-                
+                const doc = await db.collection('lectures').doc('current').get();
                 if (doc.exists) {
-                    count = doc.data().count || 0;
-                } else {
-                    await attendanceRef.set({ count: 0 });
-                    count = 0;
+                    const data = doc.data();
+                    dateInput.value = data.date;
+                    timeInput.value = data.time;
+                    maxParticipants.value = data.maxParticipants;
+                    currentParticipants.value = data.currentParticipants;
+                    remainingSeats.value = data.remainingSeats;
                 }
-                
-                updateDisplay();
             } catch (error) {
-                console.error('데이터 로드 중 오류:', error);
-                alert('데이터를 불러오는 중 오류가 발생했습니다.');
-            } finally {
-                hideLoading();
+                console.error("Error loading data: ", error);
             }
         }
 
-        async function joinAttendance() {
-            if (!hasJoined && count < MAX_CAPACITY) {
-                try {
-                    showLoading();
-                    await attendanceRef.update({
-                        count: count + 1
-                    });
-                    hasJoined = true;
-                    updateDisplay();
-                } catch (error) {
-                    console.error('참가 신청 중 오류:', error);
-                    alert('참가 신청 중 오류가 발생했습니다.');
-                } finally {
-                    hideLoading();
-                }
-            }
-        }
-
-        async function cancelAttendance() {
-            if (hasJoined) {
-                try {
-                    showLoading();
-                    await attendanceRef.update({
-                        count: count - 1
-                    });
-                    hasJoined = false;
-                    updateDisplay();
-                } catch (error) {
-                    console.error('참가 취소 중 오류:', error);
-                    alert('참가 취소 중 오류가 발생했습니다.');
-                } finally {
-                    hideLoading();
-                }
-            }
-        }
-        
-        function updateDisplay() {
-            const counter = document.getElementById('counter');
-            const joinBtn = document.getElementById('joinBtn');
-            const cancelBtn = document.getElementById('cancelBtn');
-            const statusMessage = document.getElementById('statusMessage');
-            const myStatus = document.getElementById('myStatus');
-            
-            counter.innerText = count;
-            
-            joinBtn.disabled = hasJoined || count >= MAX_CAPACITY;
-            cancelBtn.disabled = !hasJoined;
-            
-            if (count >= MAX_CAPACITY) {
-                statusMessage.textContent = '정원이 마감되었습니다';
-                statusMessage.style.color = '#e74c3c';
-            } else if (count === 0) {
-                statusMessage.textContent = '참가자를 기다리고 있습니다';
-                statusMessage.style.color = '#666';
-            } else {
-                statusMessage.textContent = `남은 자리: ${MAX_CAPACITY - count}명`;
-                statusMessage.style.color = '#2ecc71';
-            }
-
-            if (hasJoined) {
-                myStatus.textContent = '✅ 참가 신청 완료';
-                myStatus.style.color = '#2ecc71';
-            } else {
-                myStatus.textContent = '미참가 상태';
-                myStatus.style.color = '#666';
-            }
-        }
-
-        // Firestore 실시간 업데이트 리스너
-        attendanceRef.onSnapshot((doc) => {
-            if (doc.exists) {
-                count = doc.data().count || 0;
-                updateDisplay();
+        // 저장 기능
+        saveBtn.addEventListener('click', async () => {
+            try {
+                await db.collection('lectures').doc('current').set({
+                    date: dateInput.value,
+                    time: timeInput.value,
+                    maxParticipants: parseInt(maxParticipants.value),
+                    currentParticipants: parseInt(currentParticipants.value),
+                    remainingSeats: parseInt(remainingSeats.value)
+                });
+                alert('저장되었습니다.');
+            } catch (error) {
+                console.error("Error saving data: ", error);
+                alert('저장 중 오류가 발생했습니다.');
             }
         });
-        
-        // 페이지 로드 시 초기 데이터 로드
-        loadInitialData();
+
+        // 초기화 모달 표시
+        resetBtn.addEventListener('click', () => {
+            resetModal.style.display = 'flex';
+        });
+
+        // 초기화 취소
+        cancelReset.addEventListener('click', () => {
+            resetModal.style.display = 'none';
+        });
+
+        // 초기화 확인
+        confirmReset.addEventListener('click', async () => {
+            try {
+                const max = parseInt(maxParticipants.value);
+                await db.collection('lectures').doc('current').update({
+                    currentParticipants: 0,
+                    remainingSeats: max
+                });
+                currentParticipants.value = 0;
+                remainingSeats.value = max;
+                resetModal.style.display = 'none';
+                alert('참가자 수가 초기화되었습니다.');
+            } catch (error) {
+                console.error("Error resetting participants: ", error);
+                alert('초기화 중 오류가 발생했습니다.');
+            }
+        });
+
+        // 페이지 로드 시 데이터 불러오기
+        loadData();
     </script>
 </body>
 </html>
