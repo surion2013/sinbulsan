@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>신불산 강의 관리자 페이지</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="max-w-2xl mx-auto mt-8 bg-white rounded-lg shadow-lg p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                신불산 강의 관리자 페이지
+            </h1>
+            <button id="resetBtn" class="flex items-center gap-2 px-4 py-2 border rounded-md hover:bg-gray-50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                참가자 초기화
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">날짜</label>
+                    <input type="date" id="dateInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">시간</label>
+                    <input type="time" id="timeInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">최대 수용 인원</label>
+                <input type="number" id="maxParticipants" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">현재 참가자</label>
+                    <input type="number" id="currentParticipants" disabled class="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">남은 자리</label>
+                    <input type="number" id="remainingSeats" disabled class="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm">
+                </div>
+            </div>
+
+            <button id="saveBtn" class="mt-6 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                저장
+            </button>
+        </div>
+    </div>
+
+    <!-- 초기화 확인 모달 -->
+    <div id="resetModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">참가자 초기화</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">
+                        정말로 참가자 수를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+                    </p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="cancelReset" class="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md w-24 mr-2">
+                        취소
+                    </button>
+                    <button id="confirmReset" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-24">
+                        확인
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase 초기화
+        const firebaseConfig = {
+            // 여기에 Firebase 설정을 넣으세요
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // 요소 가져오기
+        const dateInput = document.getElementById('dateInput');
+        const timeInput = document.getElementById('timeInput');
+        const maxParticipants = document.getElementById('maxParticipants');
+        const currentParticipants = document.getElementById('currentParticipants');
+        const remainingSeats = document.getElementById('remainingSeats');
+        const resetBtn = document.getElementById('resetBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const resetModal = document.getElementById('resetModal');
+        const confirmReset = document.getElementById('confirmReset');
+        const cancelReset = document.getElementById('cancelReset');
+
+        // 초기 데이터 로드
+        async function loadData() {
+            try {
+                const doc = await db.collection('lectures').doc('current').get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    dateInput.value = data.date;
+                    timeInput.value = data.time;
+                    maxParticipants.value = data.maxParticipants;
+                    currentParticipants.value = data.currentParticipants;
+                    remainingSeats.value = data.remainingSeats;
+                }
+            } catch (error) {
+                console.error("Error loading data: ", error);
+            }
+        }
+
+        // 저장 기능
+        saveBtn.addEventListener('click', async () => {
+            try {
+                await db.collection('lectures').doc('current').set({
+                    date: dateInput.value,
+                    time: timeInput.value,
+                    maxParticipants: parseInt(maxParticipants.value),
+                    currentParticipants: parseInt(currentParticipants.value),
+                    remainingSeats: parseInt(remainingSeats.value)
+                });
+                alert('저장되었습니다.');
+            } catch (error) {
+                console.error("Error saving data: ", error);
+                alert('저장 중 오류가 발생했습니다.');
+            }
+        });
+
+        // 초기화 모달 표시
+        resetBtn.addEventListener('click', () => {
+            resetModal.classList.remove('hidden');
+        });
+
+        // 초기화 취소
+        cancelReset.addEventListener('click', () => {
+            resetModal.classList.add('hidden');
+        });
+
+        // 초기화 확인
+        confirmReset.addEventListener('click', async () => {
+            try {
+                const max = parseInt(maxParticipants.value);
+                await db.collection('lectures').doc('current').update({
+                    currentParticipants: 0,
+                    remainingSeats: max
+                });
+                currentParticipants.value = 0;
+                remainingSeats.value = max;
+                resetModal.classList.add('hidden');
+                alert('참가자 수가 초기화되었습니다.');
+            } catch (error) {
+                console.error("Error resetting participants: ", error);
+                alert('초기화 중 오류가 발생했습니다.');
+            }
+        });
+
+        // 페이지 로드 시 데이터 불러오기
+        loadData();
+    </script>
+</body>
+</html>
