@@ -5,12 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>신불산 강의</title>
     
-    <!-- Firebase SDK를 CDN으로 추가 -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 
     <style>
-        /* 이전 스타일 코드와 동일 */
         body {
             font-family: 'Noto Sans KR', Arial, sans-serif;
             display: flex;
@@ -162,7 +161,7 @@
     </div>
     <div class="card">
         <h1>신불산 강의</h1>
-        <div class="date-info">
+        <div id="dateInfo" class="date-info">
             2024년 1월 13일 (토) 14:00
         </div>
         <div class="counter" id="counter">0</div>
@@ -171,7 +170,7 @@
             <button class="join-btn" onclick="joinAttendance()" id="joinBtn">참가</button>
         </div>
         <div class="status-message" id="statusMessage"></div>
-        <div class="capacity-info">최대 수용 인원: 300명</div>
+        <div id="capacityInfo" class="capacity-info">최대 수용 인원: 300명</div>
         <div class="my-status" id="myStatus"></div>
     </div>
 
@@ -192,8 +191,8 @@
         const db = firebase.firestore();
         const attendanceRef = db.collection('attendance').doc('counter');
 
-        const MAX_CAPACITY = 300;
         let count = 0;
+        let MAX_CAPACITY = 300;
         let hasJoined = false;
         const loadingScreen = document.querySelector('.loading');
 
@@ -205,6 +204,24 @@
             loadingScreen.classList.remove('active');
         }
 
+        // 날짜 포맷 함수
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'short'
+            });
+        }
+
+        // 시간 포맷 함수
+        function formatTime(timeStr) {
+            const [hours, minutes] = timeStr.split(':');
+            const hour = parseInt(hours);
+            return `${hour < 12 ? '오전' : '오후'} ${String(hour % 12 || 12).padStart(2, '0')}:${minutes}`;
+        }
+
         // 초기 데이터 로드
         async function loadInitialData() {
             try {
@@ -212,10 +229,28 @@
                 const doc = await attendanceRef.get();
                 
                 if (doc.exists) {
-                    count = doc.data().count || 0;
+                    const data = doc.data();
+                    count = data.count || 0;
+                    MAX_CAPACITY = data.maxCapacity || 300;
+                    
+                    // 날짜와 시간 업데이트
+                    if (data.date && data.time) {
+                        const dateInfo = document.getElementById('dateInfo');
+                        dateInfo.textContent = `${formatDate(data.date)} ${formatTime(data.time)}`;
+                    }
+                    
+                    // 최대 인원 업데이트
+                    const capacityInfo = document.getElementById('capacityInfo');
+                    capacityInfo.textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
                 } else {
-                    await attendanceRef.set({ count: 0 });
+                    await attendanceRef.set({ 
+                        count: 0, 
+                        maxCapacity: 300,
+                        date: '2024-01-13',
+                        time: '14:00'
+                    });
                     count = 0;
+                    MAX_CAPACITY = 300;
                 }
                 
                 updateDisplay();
@@ -269,8 +304,10 @@
             const cancelBtn = document.getElementById('cancelBtn');
             const statusMessage = document.getElementById('statusMessage');
             const myStatus = document.getElementById('myStatus');
+            const capacityInfo = document.getElementById('capacityInfo');
             
             counter.innerText = count;
+            capacityInfo.textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
             
             joinBtn.disabled = hasJoined || count >= MAX_CAPACITY;
             cancelBtn.disabled = !hasJoined;
@@ -295,10 +332,19 @@
             }
         }
 
-        // Firestore 실시간 업데이트 리스너
+        // 실시간 업데이트 리스너
         attendanceRef.onSnapshot((doc) => {
             if (doc.exists) {
-                count = doc.data().count || 0;
+                const data = doc.data();
+                count = data.count || 0;
+                MAX_CAPACITY = data.maxCapacity || 300;
+                
+                // 날짜와 시간 업데이트
+                if (data.date && data.time) {
+                    const dateInfo = document.getElementById('dateInfo');
+                    dateInfo.textContent = `${formatDate(data.date)} ${formatTime(data.time)}`;
+                }
+                
                 updateDisplay();
             }
         });
