@@ -160,7 +160,7 @@
         <div class="loading-spinner"></div>
     </div>
     <div class="card">
-        <h1>신불산 프로젝트</h1>
+        <h1 id="mainTitle">신불산 프로젝트</h1>
         <div id="dateInfo" class="date-info">
             2024년 1월 13일 (토) 14:00
         </div>
@@ -232,6 +232,11 @@
                     const data = doc.data();
                     count = data.count || 0;
                     MAX_CAPACITY = data.maxCapacity || 300;
+                    
+                    // 메인 제목 업데이트
+                    if (data.mainTitle) {
+                        document.getElementById('mainTitle').textContent = data.mainTitle;
+                    }
                     
                     // 날짜와 시간 업데이트
                     if (data.date && data.time) {
@@ -339,6 +344,11 @@
                 count = data.count || 0;
                 MAX_CAPACITY = data.maxCapacity || 300;
                 
+                // 메인 제목 업데이트
+                if (data.mainTitle) {
+                    document.getElementById('mainTitle').textContent = data.mainTitle;
+                }
+                
                 // 날짜와 시간 업데이트
                 if (data.date && data.time) {
                     const dateInfo = document.getElementById('dateInfo');
@@ -354,3 +364,4 @@
     </script>
 </body>
 </html>
+
