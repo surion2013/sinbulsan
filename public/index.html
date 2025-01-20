@@ -247,6 +247,13 @@
                     // 최대 인원 업데이트
                     const capacityInfo = document.getElementById('capacityInfo');
                     capacityInfo.textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
+
+                    const lastResetTimestamp = localStorage.getItem('lastResetTimestamp');
+                    if (data.resetTimestamp && (!lastResetTimestamp || data.resetTimestamp.toDate() > new Date(lastResetTimestamp))) {
+                        localStorage.removeItem('hasJoined');
+                        localStorage.setItem('lastResetTimestamp', data.resetTimestamp.toDate().toISOString());
+                        hasJoined = false;
+                    }
                 } else {
                     await attendanceRef.set({ 
                         count: 0, 
@@ -358,6 +365,13 @@
                 if (data.date && data.time) {
                     const dateInfo = document.getElementById('dateInfo');
                     dateInfo.textContent = `${formatDate(data.date)} ${formatTime(data.time)}`;
+                }
+
+                const lastResetTimestamp = localStorage.getItem('lastResetTimestamp');
+                if (data.resetTimestamp && (!lastResetTimestamp || data.resetTimestamp.toDate() > new Date(lastResetTimestamp))) {
+                    localStorage.removeItem('hasJoined');
+                    localStorage.setItem('lastResetTimestamp', data.resetTimestamp.toDate().toISOString());
+                    hasJoined = false;
                 }
                 
                 updateDisplay();

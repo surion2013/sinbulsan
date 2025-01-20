@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sinbulsan Project 관리자</title>
+    <title>신불산 강의 관리자 페이지</title>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <style>
@@ -248,7 +248,7 @@
                     <line x1="8" y1="2" x2="8" y2="6"></line>
                     <line x1="3" y1="10" x2="21" y2="10"></line>
                 </svg>
-                Sinbusan Project
+                신불산 강의 관리자 페이지
             </h1>
             <button id="resetBtn" class="reset-btn">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -405,7 +405,8 @@
                 const maxCount = Number(maxParticipants.value) || 300;
                 await attendanceRef.update({
                     count: 0,
-                    maxCapacity: maxCount
+                    maxCapacity: maxCount,
+                    resetTimestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 currentParticipants.value = 0;
                 remainingSeats.value = maxCount;
