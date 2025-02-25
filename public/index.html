@@ -64,6 +64,11 @@
             margin: 20px 0;
             color: #2c3e50;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease; /* 애니메이션 추가 */
+        }
+        
+        .counter.update {
+            transform: scale(1.1); /* 숫자 바뀔 때 살짝 커짐 */
         }
         
         .button-group {
@@ -315,6 +320,9 @@
             const capacityInfo = document.getElementById('capacityInfo');
             
             counter.innerText = count;
+            counter.classList.add('update');
+            setTimeout(() => counter.classList.remove('update'), 300); // 0.3초 후 효과 제거
+            
             capacityInfo.textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
             
             joinBtn.disabled = hasJoined || count >= MAX_CAPACITY;
