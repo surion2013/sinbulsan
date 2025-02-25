@@ -64,7 +64,11 @@
             margin: 20px 0;
             color: #2c3e50;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-            transition: opacity 1s ease; /* 페이드인 1초 */
+            transition: transform 0.5s ease; /* 회전 0.5초 */
+        }
+        
+        .counter.rotate {
+            transform: rotate(10deg); /* 살짝 회전 */
         }
         
         .button-group {
@@ -315,12 +319,9 @@
             const myStatus = document.getElementById('myStatus');
             const capacityInfo = document.getElementById('capacityInfo');
             
-            // 숫자 업데이트 전에 투명하게
-            counter.style.opacity = '0';
-            setTimeout(() => {
-                counter.innerText = count; // 숫자 변경
-                counter.style.opacity = '1'; // 1초 동안 서서히 나타남
-            }, 50); // 아주 짧은 딜레이로 숫자 변경 후 애니메이션 시작
+            counter.classList.add('rotate'); // 회전 시작
+            counter.innerText = count;
+            setTimeout(() => counter.classList.remove('rotate'), 500); // 0.5초 후 원래 상태로
             
             capacityInfo.textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
             
