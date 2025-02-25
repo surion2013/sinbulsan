@@ -64,7 +64,7 @@
             margin: 20px 0;
             color: #2c3e50;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-            transition: opacity 0.3s ease; /* 페이드인 효과 */
+            transition: opacity 1s ease; /* 페이드인 1초로 변경 */
         }
         
         .button-group {
@@ -317,7 +317,7 @@
             
             counter.style.opacity = '0'; // 투명하게 시작
             counter.innerText = count;
-            setTimeout(() => counter.style.opacity = '1', 50); // 0.05초 후 나타남
+            setTimeout(() => counter.style.opacity = '1', 50); // 1초 동안 나타남 (transition에 맞춰)
             
             capacityInfo.textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
             
