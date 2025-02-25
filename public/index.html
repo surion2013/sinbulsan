@@ -64,11 +64,11 @@
             margin: 20px 0;
             color: #2c3e50;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.5s ease; /* 회전 0.5초 */
+            transition: transform 0.3s ease; /* 살짝 커졌다 작아짐 */
         }
         
-        .counter.rotate {
-            transform: rotate(10deg); /* 살짝 회전 */
+        .counter.update {
+            transform: scale(1.1); /* 1.1배 커짐 */
         }
         
         .button-group {
@@ -319,9 +319,9 @@
             const myStatus = document.getElementById('myStatus');
             const capacityInfo = document.getElementById('capacityInfo');
             
-            counter.classList.add('rotate'); // 회전 시작
             counter.innerText = count;
-            setTimeout(() => counter.classList.remove('rotate'), 500); // 0.5초 후 원래 상태로
+            counter.classList.add('update'); // 커졌다가
+            setTimeout(() => counter.classList.remove('update'), 300); // 0.3초 후 작아짐
             
             capacityInfo.textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
             
