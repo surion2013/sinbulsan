@@ -222,53 +222,19 @@
             return `${hour < 12 ? '오전' : '오후'} ${String(hour % 12 || 12).padStart(2, '0')}:${minutes}`;
         }
 
-        // 초기 데이터 로드
+        // 초기 데이터 로드 (상태 설정 제외)
         async function loadInitialData() {
             try {
                 showLoading();
                 const doc = await attendanceRef.get();
-                
-                if (doc.exists) {
-                    const data = doc.data();
-                    count = data.count || 0;
-                    MAX_CAPACITY = data.maxCapacity || 300;
-                    
-                    // 메인 제목 업데이트
-                    if (data.mainTitle) {
-                        document.getElementById('mainTitle').textContent = data.mainTitle;
-                    }
-                    
-                    // 날짜와 시간 업데이트
-                    if (data.date && data.time) {
-                        const dateInfo = document.getElementById('dateInfo');
-                        dateInfo.textContent = `${formatDate(data.date)} ${formatTime(data.time)}`;
-                    }
-                    
-                    // 최대 인원 업데이트
-                    const capacityInfo = document.getElementById('capacityInfo');
-                    capacityInfo.textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
-
-                    const lastResetTimestamp = localStorage.getItem('lastResetTimestamp');
-                    if (data.resetTimestamp && (!lastResetTimestamp || data.resetTimestamp.toDate() > new Date(lastResetTimestamp))) {
-                        localStorage.removeItem('hasJoined');
-                        localStorage.setItem('lastResetTimestamp', data.resetTimestamp.toDate().toISOString());
-                        hasJoined = false;
-                    }
-                } else {
+                if (!doc.exists) {
                     await attendanceRef.set({ 
                         count: 0, 
                         maxCapacity: 300,
                         date: '2024-01-13',
                         time: '14:00'
                     });
-                    count = 0;
-                    MAX_CAPACITY = 300;
                 }
-                
-                // 로컬 스토리지에서 참가 상태 확인
-                hasJoined = localStorage.getItem('hasJoined') === 'true';
-
-                updateDisplay();
             } catch (error) {
                 console.error('데이터 로드 중 오류:', error);
                 alert('데이터를 불러오는 중 오류가 발생했습니다.');
@@ -276,6 +242,31 @@
                 hideLoading();
             }
         }
+
+        // 실시간 업데이트 및 상태 관리
+        attendanceRef.onSnapshot((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                count = data.count || 0;
+                MAX_CAPACITY = data.maxCapacity || 300;
+
+                const lastResetTimestamp = localStorage.getItem('lastResetTimestamp');
+                const newResetTimestamp = data.resetTimestamp?.toDate();
+                if (newResetTimestamp && (!lastResetTimestamp || newResetTimestamp > new Date(lastResetTimestamp))) {
+                    localStorage.removeItem('hasJoined');
+                    localStorage.setItem('lastResetTimestamp', newResetTimestamp.toISOString());
+                    hasJoined = false;
+                } else {
+                    hasJoined = localStorage.getItem('hasJoined') === 'true';
+                }
+
+                document.getElementById('mainTitle').textContent = data.mainTitle || '신불산 프로젝트';
+                if (data.date && data.time) {
+                    document.getElementById('dateInfo').textContent = `${formatDate(data.date)} ${formatTime(data.time)}`;
+                }
+                updateDisplay();
+            }
+        });
 
         async function joinAttendance() {
             if (!hasJoined && count < MAX_CAPACITY) {
@@ -329,6 +320,8 @@
             joinBtn.disabled = hasJoined || count >= MAX_CAPACITY;
             cancelBtn.disabled = !hasJoined;
             
+            console.log('UI 갱신:', { hasJoined, count, MAX_CAPACITY, joinBtnDisabled: joinBtn.disabled });
+
             if (count >= MAX_CAPACITY) {
                 statusMessage.textContent = '정원이 마감되었습니다';
                 statusMessage.style.color = '#e74c3c';
@@ -349,35 +342,6 @@
             }
         }
 
-        // 실시간 업데이트 리스너
-        attendanceRef.onSnapshot((doc) => {
-            if (doc.exists) {
-                const data = doc.data();
-                count = data.count || 0;
-                MAX_CAPACITY = data.maxCapacity || 300;
-                
-                // 메인 제목 업데이트
-                if (data.mainTitle) {
-                    document.getElementById('mainTitle').textContent = data.mainTitle;
-                }
-                
-                // 날짜와 시간 업데이트
-                if (data.date && data.time) {
-                    const dateInfo = document.getElementById('dateInfo');
-                    dateInfo.textContent = `${formatDate(data.date)} ${formatTime(data.time)}`;
-                }
-
-                const lastResetTimestamp = localStorage.getItem('lastResetTimestamp');
-                if (data.resetTimestamp && (!lastResetTimestamp || data.resetTimestamp.toDate() > new Date(lastResetTimestamp))) {
-                    localStorage.removeItem('hasJoined');
-                    localStorage.setItem('lastResetTimestamp', data.resetTimestamp.toDate().toISOString());
-                    hasJoined = false;
-                }
-                
-                updateDisplay();
-            }
-        });
-        
         // 페이지 로드 시 초기 데이터 로드
         loadInitialData();
     </script>
