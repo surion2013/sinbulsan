@@ -255,11 +255,16 @@
                 count = data.count || 0;
                 MAX_CAPACITY = data.maxCapacity || 300;
 
+                // 초기화 여부 확인
                 const lastResetTimestamp = localStorage.getItem('lastResetTimestamp');
                 const newResetTimestamp = data.resetTimestamp?.toDate();
-                if (newResetTimestamp && (!lastResetTimestamp || newResetTimestamp > new Date(lastResetTimestamp))) {
+                
+                // 초기화가 발생했거나, count가 0이 되었을 때 로컬 스토리지 초기화
+                if ((newResetTimestamp && (!lastResetTimestamp || newResetTimestamp > new Date(lastResetTimestamp))) || count === 0) {
                     localStorage.removeItem('hasJoined');
-                    localStorage.setItem('lastResetTimestamp', newResetTimestamp.toISOString());
+                    if (newResetTimestamp) {
+                        localStorage.setItem('lastResetTimestamp', newResetTimestamp.toISOString());
+                    }
                     hasJoined = false;
                 } else {
                     hasJoined = localStorage.getItem('hasJoined') === 'true';
