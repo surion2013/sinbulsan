@@ -334,25 +334,9 @@
             if (!hasJoined && count < MAX_CAPACITY) {
                 try {
                     showLoading();
-                    const docRef = await attendanceRef.get();
-                    const data = docRef.data();
-                    
-                    if (!docRef.exists) {
-                        throw new Error('데이터를 찾을 수 없습니다.');
-                    }
-                    
-                    if (data.count >= MAX_CAPACITY) {
-                        throw new Error('정원이 마감되었습니다.');
-                    }
-
-                    if (!isEventValid(data.date, data.time)) {
-                        throw new Error('이벤트가 종료되었습니다.');
-                    }
-
                     await attendanceRef.update({
                         count: firebase.firestore.FieldValue.increment(1)
                     });
-
                     hasJoined = true;
                     localStorage.setItem('hasJoined', 'true');
                     updateDisplay();
@@ -374,21 +358,9 @@
             if (hasJoined) {
                 try {
                     showLoading();
-                    const docRef = await attendanceRef.get();
-                    const data = docRef.data();
-                    
-                    if (!docRef.exists) {
-                        throw new Error('데이터를 찾을 수 없습니다.');
-                    }
-                    
-                    if (data.count <= 0) {
-                        throw new Error('취소할 참가 내역이 없습니다.');
-                    }
-
                     await attendanceRef.update({
                         count: firebase.firestore.FieldValue.increment(-1)
                     });
-
                     hasJoined = false;
                     localStorage.removeItem('hasJoined');
                     updateDisplay();
