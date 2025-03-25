@@ -334,8 +334,18 @@
             if (!hasJoined && count < MAX_CAPACITY) {
                 try {
                     showLoading();
+                    const docRef = await attendanceRef.get();
+                    if (!docRef.exists) {
+                        throw new Error('데이터를 찾을 수 없습니다.');
+                    }
+                    
+                    const data = docRef.data();
+                    if (data.count >= MAX_CAPACITY) {
+                        throw new Error('정원이 마감되었습니다.');
+                    }
+
                     await attendanceRef.update({
-                        count: firebase.firestore.FieldValue.increment(1)
+                        count: count + 1
                     });
                     hasJoined = true;
                     localStorage.setItem('hasJoined', 'true');
@@ -358,8 +368,18 @@
             if (hasJoined) {
                 try {
                     showLoading();
+                    const docRef = await attendanceRef.get();
+                    if (!docRef.exists) {
+                        throw new Error('데이터를 찾을 수 없습니다.');
+                    }
+                    
+                    const data = docRef.data();
+                    if (data.count <= 0) {
+                        throw new Error('취소할 참가 내역이 없습니다.');
+                    }
+
                     await attendanceRef.update({
-                        count: firebase.firestore.FieldValue.increment(-1)
+                        count: count - 1
                     });
                     hasJoined = false;
                     localStorage.removeItem('hasJoined');
