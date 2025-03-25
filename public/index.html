@@ -349,8 +349,8 @@
                             throw new Error('이벤트가 종료되었습니다.');
                         }
 
-                        transaction.update(attendanceRef, {
-                            count: data.count + 1
+                        return transaction.update(attendanceRef, {
+                            count: firebase.firestore.FieldValue.increment(1)
                         });
                     });
 
@@ -386,8 +386,8 @@
                             throw new Error('취소할 참가 내역이 없습니다.');
                         }
 
-                        transaction.update(attendanceRef, {
-                            count: data.count - 1
+                        return transaction.update(attendanceRef, {
+                            count: firebase.firestore.FieldValue.increment(-1)
                         });
                     });
 
