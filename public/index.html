@@ -199,7 +199,42 @@
         let count = 0;
         let MAX_CAPACITY = 300;
         let hasJoined = false;
+        let isOnline = true;
         const loadingScreen = document.querySelector('.loading');
+
+        // 네트워크 상태 모니터링
+        function setupNetworkMonitoring() {
+            db.enableNetwork().then(() => {
+                console.log("Network connectivity restored");
+                isOnline = true;
+                updateDisplay();
+            }).catch((err) => {
+                console.error("Network connectivity error:", err);
+                isOnline = false;
+                updateDisplay();
+            });
+
+            window.addEventListener('online', () => {
+                db.enableNetwork().then(() => {
+                    isOnline = true;
+                    updateDisplay();
+                });
+            });
+
+            window.addEventListener('offline', () => {
+                isOnline = false;
+                updateDisplay();
+            });
+        }
+
+        // 이벤트 날짜/시간 유효성 검사
+        function isEventValid(eventDate, eventTime) {
+            const now = new Date();
+            const [year, month, day] = eventDate.split('-').map(Number);
+            const [hours, minutes] = eventTime.split(':').map(Number);
+            const eventDateTime = new Date(year, month - 1, day, hours, minutes);
+            return eventDateTime > now;
+        }
 
         function showLoading() {
             loadingScreen.classList.add('active');
@@ -255,11 +290,19 @@
                 count = data.count || 0;
                 MAX_CAPACITY = data.maxCapacity || 300;
 
+                // 이벤트 유효성 검사
+                const isValid = isEventValid(data.date, data.time);
+                if (!isValid) {
+                    document.getElementById('statusMessage').textContent = '이벤트가 종료되었습니다';
+                    document.getElementById('joinBtn').disabled = true;
+                    document.getElementById('cancelBtn').disabled = true;
+                    return;
+                }
+
                 // 초기화 여부 확인
                 const lastResetTimestamp = localStorage.getItem('lastResetTimestamp');
                 const newResetTimestamp = data.resetTimestamp?.toDate();
                 
-                // 초기화가 발생했거나, count가 0이 되었을 때 로컬 스토리지 초기화
                 if ((newResetTimestamp && (!lastResetTimestamp || newResetTimestamp > new Date(lastResetTimestamp))) || count === 0) {
                     localStorage.removeItem('hasJoined');
                     if (newResetTimestamp) {
@@ -276,21 +319,47 @@
                 }
                 updateDisplay();
             }
+        }, (error) => {
+            console.error("Snapshot error:", error);
+            isOnline = false;
+            updateDisplay();
         });
 
         async function joinAttendance() {
+            if (!isOnline) {
+                alert('네트워크 연결을 확인해주세요.');
+                return;
+            }
+
             if (!hasJoined && count < MAX_CAPACITY) {
                 try {
                     showLoading();
-                    await attendanceRef.update({
-                        count: count + 1
+                    await db.runTransaction(async (transaction) => {
+                        const doc = await transaction.get(attendanceRef);
+                        if (!doc.exists) {
+                            throw new Error('데이터를 찾을 수 없습니다.');
+                        }
+                        
+                        const data = doc.data();
+                        if (data.count >= MAX_CAPACITY) {
+                            throw new Error('정원이 마감되었습니다.');
+                        }
+
+                        if (!isEventValid(data.date, data.time)) {
+                            throw new Error('이벤트가 종료되었습니다.');
+                        }
+
+                        transaction.update(attendanceRef, {
+                            count: data.count + 1
+                        });
                     });
+
                     hasJoined = true;
                     localStorage.setItem('hasJoined', 'true');
                     updateDisplay();
                 } catch (error) {
                     console.error('참가 신청 중 오류:', error);
-                    alert('참가 신청 중 오류가 발생했습니다.');
+                    alert(error.message || '참가 신청 중 오류가 발생했습니다.');
                 } finally {
                     hideLoading();
                 }
@@ -298,18 +367,36 @@
         }
 
         async function cancelAttendance() {
+            if (!isOnline) {
+                alert('네트워크 연결을 확인해주세요.');
+                return;
+            }
+
             if (hasJoined) {
                 try {
                     showLoading();
-                    await attendanceRef.update({
-                        count: count - 1
+                    await db.runTransaction(async (transaction) => {
+                        const doc = await transaction.get(attendanceRef);
+                        if (!doc.exists) {
+                            throw new Error('데이터를 찾을 수 없습니다.');
+                        }
+                        
+                        const data = doc.data();
+                        if (data.count <= 0) {
+                            throw new Error('취소할 참가 내역이 없습니다.');
+                        }
+
+                        transaction.update(attendanceRef, {
+                            count: data.count - 1
+                        });
                     });
+
                     hasJoined = false;
                     localStorage.removeItem('hasJoined');
                     updateDisplay();
                 } catch (error) {
                     console.error('참가 취소 중 오류:', error);
-                    alert('참가 취소 중 오류가 발생했습니다.');
+                    alert(error.message || '참가 취소 중 오류가 발생했습니다.');
                 } finally {
                     hideLoading();
                 }
@@ -325,17 +412,20 @@
             const capacityInfo = document.getElementById('capacityInfo');
             
             counter.innerText = count;
-            counter.classList.add('update'); // 커졌다가
-            setTimeout(() => counter.classList.remove('update'), 300); // 0.3초 후 작아짐
+            counter.classList.add('update');
+            setTimeout(() => counter.classList.remove('update'), 300);
             
             capacityInfo.textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
             
-            joinBtn.disabled = hasJoined || count >= MAX_CAPACITY;
-            cancelBtn.disabled = !hasJoined;
+            // 네트워크 상태에 따른 버튼 비활성화
+            const buttonsDisabled = !isOnline;
+            joinBtn.disabled = buttonsDisabled || hasJoined || count >= MAX_CAPACITY;
+            cancelBtn.disabled = buttonsDisabled || !hasJoined;
             
-            console.log('UI 갱신:', { hasJoined, count, MAX_CAPACITY, joinBtnDisabled: joinBtn.disabled });
-
-            if (count >= MAX_CAPACITY) {
+            if (!isOnline) {
+                statusMessage.textContent = '네트워크 연결 끊김';
+                statusMessage.style.color = '#e74c3c';
+            } else if (count >= MAX_CAPACITY) {
                 statusMessage.textContent = '정원이 마감되었습니다';
                 statusMessage.style.color = '#e74c3c';
             } else if (count === 0) {
@@ -355,8 +445,9 @@
             }
         }
 
-        // 페이지 로드 시 초기 데이터 로드
+        // 페이지 로드 시 초기화
         loadInitialData();
+        setupNetworkMonitoring();
     </script>
 </body>
 </html>
