@@ -1,421 +1,363 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sinbulsan Project</title>
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sinbulsan Project</title>
 
-    <style>
-        body {
-            font-family: 'Noto Sans KR', Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        }
-        
-        .card {
-            background: #fff;
-            border-radius: 15px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-            padding: 30px 40px;
-            text-align: center;
-            width: 320px;
-            transition: transform 0.3s ease;
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .card h1 {
-            margin: 0 0 10px 0;
-            font-size: 24px;
-            color: #2c3e50;
-        }
-        
-        .capacity-info {
-            font-size: 14px;
-            color: #666;
-            margin: 15px 0;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-        }
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 
-        .date-info {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 20px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-        }
-        
-        .counter {
-            font-size: 56px;
-            font-weight: bold;
-            margin: 20px 0;
-            color: #2c3e50;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease; /* 살짝 커졌다 작아짐 */
-        }
-        
-        .counter.update {
-            transform: scale(1.1); /* 1.1배 커짐 */
-        }
-        
-        .button-group {
-            display: flex;
-            justify-content: space-between;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .button-group button {
-            flex: 1;
-            padding: 12px 20px;
-            font-size: 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-        
-        .cancel-btn {
-            background-color: #e74c3c;
-            color: white;
-        }
-        
-        .join-btn {
-            background-color: #2ecc71;
-            color: white;
-        }
-        
-        .button-group button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            opacity: 0.9;
-        }
-        
-        .button-group button:disabled {
-            background-color: #95a5a6;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        
-        .status-message {
-            margin-top: 15px;
-            font-size: 14px;
-            height: 20px;
-            color: #666;
-        }
+<style>
+body {
+font-family: 'Noto Sans KR', Arial, sans-serif;
+display: flex;
+justify-content: center;
+align-items: center;
+height: 100vh;
+margin: 0;
+background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
 
-        .my-status {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-        }
+.card {
+background: #fff;
+border-radius: 15px;
+box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+padding: 30px 40px;
+text-align: center;
+width: 320px;
+transition: transform 0.3s ease;
+}
 
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
+.card:hover {
+transform: translateY(-5px);
+}
 
-        .loading.active {
-            display: flex;
-        }
+.card h1 {
+margin: 0 0 10px 0;
+font-size: 24px;
+color: #2c3e50;
+}
 
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+.capacity-info {
+font-size: 14px;
+color: #666;
+margin: 15px 0;
+padding: 10px;
+background-color: #f8f9fa;
+border-radius: 8px;
+}
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+.date-info {
+font-size: 14px;
+color: #666;
+margin-bottom: 20px;
+padding: 10px;
+background-color: #f8f9fa;
+border-radius: 8px;
+}
+
+.counter {
+font-size: 56px;
+font-weight: bold;
+margin: 20px 0;
+color: #2c3e50;
+text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+transition: transform 0.3s ease; /* 살짝 커졌다 작아짐 */
+}
+
+.counter.update {
+transform: scale(1.1); /* 1.1배 커짐 */
+}
+
+.button-group {
+display: flex;
+justify-content: space-between;
+gap: 15px;
+margin-top: 20px;
+}
+
+.button-group button {
+flex: 1;
+padding: 12px 20px;
+font-size: 16px;
+border: none;
+border-radius: 8px;
+cursor: pointer;
+transition: all 0.3s ease;
+font-weight: 500;
+}
+
+.cancel-btn {
+background-color: #e74c3c;
+color: white;
+}
+
+.join-btn {
+background-color: #2ecc71;
+color: white;
+}
+
+.button-group button:hover:not(:disabled) {
+transform: translateY(-2px);
+box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+opacity: 0.9;
+}
+
+.button-group button:disabled {
+background-color: #95a5a6;
+cursor: not-allowed;
+transform: none;
+box-shadow: none;
+}
+
+.status-message {
+margin-top: 15px;
+font-size: 14px;
+height: 20px;
+color: #666;
+}
+
+.my-status {
+margin-top: 15px;
+padding: 10px;
+border-radius: 8px;
+font-size: 14px;
+background-color: #f8f9fa;
+border: 1px solid #e9ecef;
+}
+
+.loading {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(255, 255, 255, 0.8);
+display: none;
+justify-content: center;
+align-items: center;
+z-index: 1000;
+}
+
+.loading.active {
+display: flex;
+}
+
+.loading-spinner {
+width: 50px;
+height: 50px;
+border: 5px solid #f3f3f3;
+border-top: 5px solid #3498db;
+border-radius: 50%;
+animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+0% { transform: rotate(0deg); }
+100% { transform: rotate(360deg); }
+}
+</style>
 </head>
 <body>
-    <div class="loading">
-        <div class="loading-spinner"></div>
-    </div>
-    <div class="card">
-        <h1 id="mainTitle">신불산 프로젝트</h1>
-        <div id="dateInfo" class="date-info">
-            2024년 1월 13일 (토) 14:00
-        </div>
-        <div class="counter" id="counter">0</div>
-        <div class="button-group">
-            <button class="cancel-btn" onclick="cancelAttendance()" id="cancelBtn" disabled>취소</button>
-            <button class="join-btn" onclick="joinAttendance()" id="joinBtn">참가</button>
-        </div>
-        <div class="status-message" id="statusMessage"></div>
-        <div id="capacityInfo" class="capacity-info">최대 수용 인원: 300명</div>
-        <div class="my-status" id="myStatus"></div>
-    </div>
+<div class="loading">
+<div class="loading-spinner"></div>
+</div>
+<div class="card">
+<h1 id="mainTitle">신불산 프로젝트</h1>
+<div id="dateInfo" class="date-info">
+2024년 1월 13일 (토) 14:00
+</div>
+<div class="counter" id="counter">0</div>
+<div class="button-group">
+<button class="cancel-btn" onclick="cancelAttendance()" id="cancelBtn" disabled>취소</button>
+<button class="join-btn" onclick="joinAttendance()" id="joinBtn">참가</button>
+</div>
+<div class="status-message" id="statusMessage"></div>
+<div id="capacityInfo" class="capacity-info">최대 수용 인원: 300명</div>
+<div class="my-status" id="myStatus"></div>
+</div>
 
-    <script>
-        // Firebase 설정
-        const firebaseConfig = {
-            apiKey: "AIzaSyALcM_DFFdupCLCd-oW0f0IBanjngX396I",
-            authDomain: "sinbulsan-5c1f9.firebaseapp.com",
-            projectId: "sinbulsan-5c1f9",
-            storageBucket: "sinbulsan-5c1f9.firebasestorage.app",
-            messagingSenderId: "316026496310",
-            appId: "1:316026496310:web:dd132c679d3f765fc9ff97",
-            measurementId: "G-S0BBB92D1X"
-        };
+<script>
+// Firebase 설정
+const firebaseConfig = {
+apiKey: "AIzaSyALcM_DFFdupCLCd-oW0f0IBanjngX396I",
+authDomain: "sinbulsan-5c1f9.firebaseapp.com",
+projectId: "sinbulsan-5c1f9",
+storageBucket: "sinbulsan-5c1f9.firebasestorage.app",
+messagingSenderId: "316026496310",
+appId: "1:316026496310:web:dd132c679d3f765fc9ff97",
+measurementId: "G-S0BBB92D1X"
+};
 
-        // Firebase 초기화
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const attendanceRef = db.collection('attendance').doc('counter');
+// Firebase 초기화
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const attendanceRef = db.collection('attendance').doc('counter');
 
-        let count = 0;
-        let MAX_CAPACITY = 300;
-        let hasJoined = false;
-        let isOnline = true;
-        const loadingScreen = document.querySelector('.loading');
+let count = 0;
+let MAX_CAPACITY = 300;
+let hasJoined = false;
+const loadingScreen = document.querySelector('.loading');
 
-        // 네트워크 상태 모니터링
-        function setupNetworkMonitoring() {
-            db.enableNetwork().then(() => {
-                console.log("Network connectivity restored");
-                isOnline = true;
-                updateDisplay();
-            }).catch((err) => {
-                console.error("Network connectivity error:", err);
-                isOnline = false;
-                updateDisplay();
-            });
+function showLoading() {
+loadingScreen.classList.add('active');
+}
 
-            window.addEventListener('online', () => {
-                db.enableNetwork().then(() => {
-                    isOnline = true;
-                    updateDisplay();
-                });
-            });
+function hideLoading() {
+loadingScreen.classList.remove('active');
+}
 
-            window.addEventListener('offline', () => {
-                isOnline = false;
-                updateDisplay();
-            });
-        }
+// 날짜 포맷 함수
+function formatDate(dateStr) {
+const date = new Date(dateStr);
+return date.toLocaleDateString('ko-KR', {
+year: 'numeric',
+month: 'long',
+day: 'numeric',
+weekday: 'short'
+});
+}
 
-        // 이벤트 날짜/시간 유효성 검사
-        function isEventValid(eventDate, eventTime) {
-            const now = new Date();
-            const [year, month, day] = eventDate.split('-').map(Number);
-            const [hours, minutes] = eventTime.split(':').map(Number);
-            const eventDateTime = new Date(year, month - 1, day, hours, minutes);
-            return eventDateTime > now;
-        }
+// 시간 포맷 함수
+function formatTime(timeStr) {
+const [hours, minutes] = timeStr.split(':');
+const hour = parseInt(hours);
+return `${hour < 12 ? '오전' : '오후'} ${String(hour % 12 || 12).padStart(2, '0')}:${minutes}`;
+}
 
-        function showLoading() {
-            loadingScreen.classList.add('active');
-        }
+// 초기 데이터 로드 (상태 설정 제외)
+async function loadInitialData() {
+try {
+showLoading();
+const doc = await attendanceRef.get();
+if (!doc.exists) {
+await attendanceRef.set({ 
+count: 0, 
+maxCapacity: 300,
+date: '2024-01-13',
+time: '14:00'
+});
+}
+} catch (error) {
+console.error('데이터 로드 중 오류:', error);
+alert('데이터를 불러오는 중 오류가 발생했습니다.');
+} finally {
+hideLoading();
+}
+}
 
-        function hideLoading() {
-            loadingScreen.classList.remove('active');
-        }
-
-        // 날짜 포맷 함수
-        function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                weekday: 'short'
-            });
-        }
-
-        // 시간 포맷 함수
-        function formatTime(timeStr) {
-            const [hours, minutes] = timeStr.split(':');
-            const hour = parseInt(hours);
-            return `${hour < 12 ? '오전' : '오후'} ${String(hour % 12 || 12).padStart(2, '0')}:${minutes}`;
-        }
-
-        // 초기 데이터 로드 (상태 설정 제외)
-        async function loadInitialData() {
-            try {
-                showLoading();
-                const doc = await attendanceRef.get();
-                if (!doc.exists) {
-                    await attendanceRef.set({ 
-                        count: 0, 
-                        maxCapacity: 300,
-                        date: '2024-01-13',
-                        time: '14:00'
-                    });
-                }
-            } catch (error) {
-                console.error('데이터 로드 중 오류:', error);
-                alert('데이터를 불러오는 중 오류가 발생했습니다.');
-            } finally {
-                hideLoading();
-            }
-        }
-
-        // 실시간 업데이트 및 상태 관리
-        attendanceRef.onSnapshot((doc) => {
-            if (doc.exists) {
-                const data = doc.data();
-                count = data.count || 0;
-                MAX_CAPACITY = data.maxCapacity || 300;
-
-                // 이벤트 유효성 검사
-                const isValid = isEventValid(data.date, data.time);
-                if (!isValid) {
-                    document.getElementById('statusMessage').textContent = '이벤트가 종료되었습니다';
-                    document.getElementById('joinBtn').disabled = true;
-                    document.getElementById('cancelBtn').disabled = true;
-                    return;
-                }
+// 실시간 업데이트 및 상태 관리
+attendanceRef.onSnapshot((doc) => {
+if (doc.exists) {
+const data = doc.data();
+count = data.count || 0;
+MAX_CAPACITY = data.maxCapacity || 300;
 
                 // 초기화 여부 확인
-                const lastResetTimestamp = localStorage.getItem('lastResetTimestamp');
-                const newResetTimestamp = data.resetTimestamp?.toDate();
+const lastResetTimestamp = localStorage.getItem('lastResetTimestamp');
+const newResetTimestamp = data.resetTimestamp?.toDate();
+                if (newResetTimestamp && (!lastResetTimestamp || newResetTimestamp > new Date(lastResetTimestamp))) {
                 
+                // 초기화가 발생했거나, count가 0이 되었을 때 로컬 스토리지 초기화
                 if ((newResetTimestamp && (!lastResetTimestamp || newResetTimestamp > new Date(lastResetTimestamp))) || count === 0) {
-                    localStorage.removeItem('hasJoined');
+localStorage.removeItem('hasJoined');
+                    localStorage.setItem('lastResetTimestamp', newResetTimestamp.toISOString());
                     if (newResetTimestamp) {
                         localStorage.setItem('lastResetTimestamp', newResetTimestamp.toISOString());
                     }
-                    hasJoined = false;
-                } else {
-                    hasJoined = localStorage.getItem('hasJoined') === 'true';
-                }
+hasJoined = false;
+} else {
+hasJoined = localStorage.getItem('hasJoined') === 'true';
+}
 
-                document.getElementById('mainTitle').textContent = data.mainTitle || '신불산 프로젝트';
-                if (data.date && data.time) {
-                    document.getElementById('dateInfo').textContent = `${formatDate(data.date)} ${formatTime(data.time)}`;
-                }
-                updateDisplay();
-            }
-        }, (error) => {
-            console.error("Snapshot error:", error);
-            isOnline = false;
-            updateDisplay();
-        });
+document.getElementById('mainTitle').textContent = data.mainTitle || '신불산 프로젝트';
+if (data.date && data.time) {
+document.getElementById('dateInfo').textContent = `${formatDate(data.date)} ${formatTime(data.time)}`;
+}
+updateDisplay();
+}
+});
 
-        async function joinAttendance() {
-            if (!isOnline) {
-                alert('네트워크 연결을 확인해주세요.');
-                return;
-            }
+async function joinAttendance() {
+if (!hasJoined && count < MAX_CAPACITY) {
+try {
+showLoading();
+await attendanceRef.update({
+count: count + 1
+});
+hasJoined = true;
+localStorage.setItem('hasJoined', 'true');
+updateDisplay();
+} catch (error) {
+console.error('참가 신청 중 오류:', error);
+alert('참가 신청 중 오류가 발생했습니다.');
+} finally {
+hideLoading();
+}
+}
+}
 
-            if (!hasJoined && count < MAX_CAPACITY) {
-                try {
-                    showLoading();
-                    await attendanceRef.update({
-                        count: count + 1
-                    });
-                    hasJoined = true;
-                    localStorage.setItem('hasJoined', 'true');
-                } catch (error) {
-                    console.error('참가 신청 중 오류:', error);
-                    alert('참가 신청 중 오류가 발생했습니다.');
-                } finally {
-                    hideLoading();
-                }
-            }
-        }
+async function cancelAttendance() {
+if (hasJoined) {
+try {
+showLoading();
+await attendanceRef.update({
+count: count - 1
+});
+hasJoined = false;
+localStorage.removeItem('hasJoined');
+updateDisplay();
+} catch (error) {
+console.error('참가 취소 중 오류:', error);
+alert('참가 취소 중 오류가 발생했습니다.');
+} finally {
+hideLoading();
+}
+}
+}
 
-        async function cancelAttendance() {
-            if (!isOnline) {
-                alert('네트워크 연결을 확인해주세요.');
-                return;
-            }
+function updateDisplay() {
+const counter = document.getElementById('counter');
+const joinBtn = document.getElementById('joinBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+const statusMessage = document.getElementById('statusMessage');
+const myStatus = document.getElementById('myStatus');
+const capacityInfo = document.getElementById('capacityInfo');
 
-            if (hasJoined) {
-                try {
-                    showLoading();
-                    await attendanceRef.update({
-                        count: count - 1
-                    });
-                    hasJoined = false;
-                    localStorage.removeItem('hasJoined');
-                } catch (error) {
-                    console.error('참가 취소 중 오류:', error);
-                    alert('참가 취소 중 오류가 발생했습니다.');
-                } finally {
-                    hideLoading();
-                }
-            }
-        }
-        
-        function updateDisplay() {
-            const counter = document.getElementById('counter');
-            const joinBtn = document.getElementById('joinBtn');
-            const cancelBtn = document.getElementById('cancelBtn');
-            const statusMessage = document.getElementById('statusMessage');
-            const myStatus = document.getElementById('myStatus');
-            const capacityInfo = document.getElementById('capacityInfo');
-            
-            counter.innerText = count;
-            counter.classList.add('update');
-            setTimeout(() => counter.classList.remove('update'), 300);
-            
-            capacityInfo.textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
-            
-            // 네트워크 상태에 따른 버튼 비활성화
-            const buttonsDisabled = !isOnline;
-            joinBtn.disabled = buttonsDisabled || hasJoined || count >= MAX_CAPACITY;
-            cancelBtn.disabled = buttonsDisabled || !hasJoined;
-            
-            if (!isOnline) {
-                statusMessage.textContent = '네트워크 연결 끊김';
-                statusMessage.style.color = '#e74c3c';
-            } else if (count >= MAX_CAPACITY) {
-                statusMessage.textContent = '정원이 마감되었습니다';
-                statusMessage.style.color = '#e74c3c';
-            } else if (count === 0) {
-                statusMessage.textContent = '참가자를 기다리고 있습니다';
-                statusMessage.style.color = '#666';
-            } else {
-                statusMessage.textContent = `남은 자리: ${MAX_CAPACITY - count}명`;
-                statusMessage.style.color = '#2ecc71';
-            }
+counter.innerText = count;
+counter.classList.add('update'); // 커졌다가
+setTimeout(() => counter.classList.remove('update'), 300); // 0.3초 후 작아짐
 
-            if (hasJoined) {
-                myStatus.textContent = '✅ 참가 신청 완료';
-                myStatus.style.color = '#2ecc71';
-            } else {
-                myStatus.textContent = '미참가 상태';
-                myStatus.style.color = '#666';
-            }
-        }
+capacityInfo.textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
 
-        // 페이지 로드 시 초기화
-        loadInitialData();
-        setupNetworkMonitoring();
-    </script>
+joinBtn.disabled = hasJoined || count >= MAX_CAPACITY;
+cancelBtn.disabled = !hasJoined;
+
+console.log('UI 갱신:', { hasJoined, count, MAX_CAPACITY, joinBtnDisabled: joinBtn.disabled });
+
+if (count >= MAX_CAPACITY) {
+statusMessage.textContent = '정원이 마감되었습니다';
+statusMessage.style.color = '#e74c3c';
+} else if (count === 0) {
+statusMessage.textContent = '참가자를 기다리고 있습니다';
+statusMessage.style.color = '#666';
+} else {
+statusMessage.textContent = `남은 자리: ${MAX_CAPACITY - count}명`;
+statusMessage.style.color = '#2ecc71';
+}
+
+if (hasJoined) {
+myStatus.textContent = '✅ 참가 신청 완료';
+myStatus.style.color = '#2ecc71';
+} else {
+myStatus.textContent = '미참가 상태';
+myStatus.style.color = '#666';
+}
+}
+
+// 페이지 로드 시 초기 데이터 로드
+loadInitialData();
+</script>
 </body>
-</html>
