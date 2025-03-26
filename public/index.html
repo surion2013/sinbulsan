@@ -355,53 +355,56 @@ function hideLoading() {
 
 // 날짜 포맷 함수
 function formatDate(dateStr) {
-const date = new Date(dateStr);
-return date.toLocaleDateString('ko-KR', {
-year: 'numeric',
-month: 'long',
-day: 'numeric',
-weekday: 'short'
-});
+    if (!dateStr) return '날짜 미정';
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'short'
+    });
 }
 
 // 시간 포맷 함수
 function formatTime(timeStr) {
-const [hours, minutes] = timeStr.split(':');
-const hour = parseInt(hours);
-return `${hour < 12 ? '오전' : '오후'} ${String(hour % 12 || 12).padStart(2, '0')}:${minutes}`;
+    if (!timeStr) return '';
+    const [hours, minutes] = timeStr.split(':');
+    const hour = parseInt(hours);
+    return `${hour < 12 ? '오전' : '오후'} ${String(hour % 12 || 12).padStart(2, '0')}:${minutes}`;
 }
 
 // 초기 데이터 로드 (상태 설정 제외)
 async function loadInitialData() {
-try {
-    showLoading();
-    const doc = await attendanceRef.get();
-    if (!doc.exists) {
-        await attendanceRef.set({ 
-            count: 0, 
-            maxCapacity: 300,
-            date: '2024-01-13',
-            time: '14:00',
-            mainTitle: '신불산 프로젝트'
-        });
-    } else {
-        const data = doc.data();
-        document.getElementById('mainTitle').textContent = data.mainTitle || '신불산 프로젝트';
-        document.getElementById('dateInfo').textContent = 
-            data.date && data.time ? 
-            `${formatDate(data.date)} ${formatTime(data.time)}` :
-            '날짜 미정';
-        document.getElementById('capacityInfo').textContent = `최대 수용 인원: ${data.maxCapacity || 300}명`;
-        if (data.date && data.time) {
-            updateTimeLeft(data.date, data.time);
+    try {
+        showLoading();
+        const doc = await attendanceRef.get();
+        if (!doc.exists) {
+            await attendanceRef.set({ 
+                count: 0, 
+                maxCapacity: 300,
+                date: '2024-01-13',
+                time: '14:00',
+                mainTitle: '신불산 프로젝트'
+            });
+        } else {
+            const data = doc.data();
+            document.getElementById('mainTitle').textContent = data.mainTitle || '신불산 프로젝트';
+            const formattedDate = formatDate(data.date);
+            const formattedTime = formatTime(data.time);
+            document.getElementById('dateInfo').textContent = 
+                `${formattedDate} ${formattedTime}`;
+            document.getElementById('capacityInfo').textContent = `최대 수용 인원: ${data.maxCapacity || 300}명`;
+            if (data.date && data.time) {
+                updateTimeLeft(data.date, data.time);
+            }
         }
+    } catch (error) {
+        console.error('데이터 로드 중 오류:', error);
+        alert('데이터를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+        hideLoading();
     }
-} catch (error) {
-    console.error('데이터 로드 중 오류:', error);
-    alert('데이터를 불러오는 중 오류가 발생했습니다.');
-} finally {
-    hideLoading();
-}
 }
 
 // 남은 시간 계산 및 표시 함수
@@ -600,7 +603,9 @@ attendanceRef.onSnapshot((doc) => {
         // UI 업데이트
         document.getElementById('mainTitle').textContent = data.mainTitle || '신불산 프로젝트';
         if (data.date && data.time) {
-            document.getElementById('dateInfo').textContent = `${formatDate(data.date)} ${formatTime(data.time)}`;
+            const formattedDate = formatDate(data.date);
+            const formattedTime = formatTime(data.time);
+            document.getElementById('dateInfo').textContent = `${formattedDate} ${formattedTime}`;
             updateTimeLeft(data.date, data.time);
         }
         document.getElementById('capacityInfo').textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
