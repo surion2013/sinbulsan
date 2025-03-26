@@ -323,12 +323,79 @@
         const db = firebase.firestore();
         const attendanceRef = db.collection('attendance').doc('counter');
 
+        let isOnline = true;
         const loadingScreen = document.querySelector('.loading');
+
+        // 네트워크 상태 모니터링
+        function setupNetworkMonitoring() {
+            window.addEventListener('online', () => {
+                isOnline = true;
+                updateUIState();
+            });
+
+            window.addEventListener('offline', () => {
+                isOnline = false;
+                updateUIState();
+            });
+        }
+
         function showLoading() {
             loadingScreen.classList.add('active');
         }
         function hideLoading() {
             loadingScreen.classList.remove('active');
+        }
+
+        // 입력값 유효성 검사
+        function validateInputs() {
+            const maxCount = Number(maxParticipants.value);
+            const currentCount = Number(currentParticipants.value);
+            
+            if (!maxCount || maxCount <= 0) {
+                alert('최대 수용 인원은 0보다 커야 합니다.');
+                return false;
+            }
+            
+            if (currentCount < 0) {
+                alert('현재 참가자 수는 0보다 작을 수 없습니다.');
+                return false;
+            }
+            
+            if (!dateInput.value) {
+                alert('날짜를 입력해주세요.');
+                return false;
+            }
+            
+            if (!timeInput.value) {
+                alert('시간을 입력해주세요.');
+                return false;
+            }
+
+            const eventDateTime = new Date(`${dateInput.value}T${timeInput.value}`);
+            if (eventDateTime < new Date()) {
+                alert('과거 날짜는 선택할 수 없습니다.');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // UI 상태 업데이트
+        function updateUIState() {
+            const buttons = [saveBtn, resetBtn];
+            buttons.forEach(btn => {
+                btn.disabled = !isOnline;
+                btn.style.opacity = isOnline ? '1' : '0.5';
+            });
+
+            const inputs = [mainTitle, dateInput, timeInput, maxParticipants];
+            inputs.forEach(input => {
+                input.disabled = !isOnline;
+            });
+
+            if (!isOnline) {
+                alert('네트워크 연결이 끊겼습니다. 연결이 복구되면 자동으로 다시 활성화됩니다.');
+            }
         }
 
         // 요소 가져오기
@@ -360,6 +427,7 @@
                 }
             } catch (error) {
                 console.error("Error loading data: ", error);
+                alert('데이터를 불러오는 중 오류가 발생했습니다.');
             } finally {
                 hideLoading();
             }
@@ -367,24 +435,34 @@
 
         // 저장 버튼 클릭 핸들러
         saveBtn.addEventListener('click', async () => {
+            if (!isOnline) {
+                alert('네트워크 연결을 확인해주세요.');
+                return;
+            }
+
+            if (!validateInputs()) {
+                return;
+            }
+
             try {
                 showLoading();
                 const currentCount = Number(currentParticipants.value) || 0;
                 const maxCount = Number(maxParticipants.value) || 300;
                 
                 await attendanceRef.set({
-                    mainTitle: mainTitle.value,
+                    mainTitle: mainTitle.value.trim(),
                     count: currentCount,
                     maxCapacity: maxCount,
                     date: dateInput.value,
-                    time: timeInput.value
+                    time: timeInput.value,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
                 remainingSeats.value = maxCount - currentCount;
                 alert('저장되었습니다.');
             } catch (error) {
                 console.error("Error saving data: ", error);
-                alert('저장 중 오류가 발생했습니다.');
+                alert('저장 중 오류가 발생했습니다. 다시 시도해주세요.');
             } finally {
                 hideLoading();
             }
@@ -392,6 +470,10 @@
 
         // 참가자 초기화
         resetBtn.addEventListener('click', () => {
+            if (!isOnline) {
+                alert('네트워크 연결을 확인해주세요.');
+                return;
+            }
             resetModal.style.display = 'flex';
         });
 
@@ -400,13 +482,19 @@
         });
 
         confirmReset.addEventListener('click', async () => {
+            if (!isOnline) {
+                alert('네트워크 연결을 확인해주세요.');
+                return;
+            }
+
             try {
                 showLoading();
                 const maxCount = Number(maxParticipants.value) || 300;
                 await attendanceRef.update({
                     count: 0,
                     maxCapacity: maxCount,
-                    resetTimestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    resetTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 currentParticipants.value = 0;
                 remainingSeats.value = maxCount;
@@ -414,7 +502,7 @@
                 alert('참가자 수가 초기화되었습니다.');
             } catch (error) {
                 console.error("Error resetting participants: ", error);
-                alert('초기화 중 오류가 발생했습니다.');
+                alert('초기화 중 오류가 발생했습니다. 다시 시도해주세요.');
             } finally {
                 hideLoading();
             }
@@ -431,10 +519,15 @@
                 dateInput.value = data.date || '';
                 timeInput.value = data.time || '';
             }
+        }, (error) => {
+            console.error("Snapshot error:", error);
+            isOnline = false;
+            updateUIState();
         });
 
-        // 페이지 로드 시 데이터 불러오기
+        // 페이지 로드 시 초기화
         loadData();
+        setupNetworkMonitoring();
     </script>
 </body>
 </html>
