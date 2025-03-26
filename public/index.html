@@ -158,6 +158,81 @@ animation: spin 1s linear infinite;
 0% { transform: rotate(0deg); }
 100% { transform: rotate(360deg); }
 }
+
+/* 이벤트 상세 정보 스타일 */
+.event-details {
+margin-top: 20px;
+padding: 15px;
+background-color: #fff;
+border-radius: 8px;
+box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.event-info-item {
+display: flex;
+align-items: center;
+margin-bottom: 10px;
+font-size: 14px;
+color: #666;
+}
+
+.event-info-item svg {
+margin-right: 8px;
+flex-shrink: 0;
+}
+
+/* 공유 버튼 스타일 */
+.share-button {
+display: inline-flex;
+align-items: center;
+padding: 8px 16px;
+background-color: #f8f9fa;
+border: 1px solid #e9ecef;
+border-radius: 8px;
+font-size: 14px;
+color: #666;
+cursor: pointer;
+transition: all 0.2s ease;
+margin-top: 15px;
+}
+
+.share-button:hover {
+background-color: #e9ecef;
+}
+
+.share-button svg {
+margin-right: 8px;
+}
+
+/* 알림 설정 스타일 */
+.notification-button {
+display: inline-flex;
+align-items: center;
+padding: 8px 16px;
+background-color: #f8f9fa;
+border: 1px solid #e9ecef;
+border-radius: 8px;
+font-size: 14px;
+color: #666;
+cursor: pointer;
+transition: all 0.2s ease;
+margin-top: 10px;
+margin-right: 10px;
+}
+
+.notification-button:hover {
+background-color: #e9ecef;
+}
+
+.notification-button svg {
+margin-right: 8px;
+}
+
+.notification-button.active {
+background-color: #2ecc71;
+color: white;
+border-color: #2ecc71;
+}
 </style>
 </head>
 <body>
@@ -177,6 +252,51 @@ animation: spin 1s linear infinite;
 <div class="status-message" id="statusMessage"></div>
 <div id="capacityInfo" class="capacity-info">최대 수용 인원: 300명</div>
 <div class="my-status" id="myStatus"></div>
+
+<!-- 이벤트 상세 정보 섹션 -->
+<div class="event-details">
+<div class="event-info-item">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<circle cx="12" cy="12" r="10"></circle>
+<polyline points="12 6 12 12 16 14"></polyline>
+</svg>
+<span id="eventTimeLeft">행사까지 남은 시간: 계산 중...</span>
+</div>
+<div class="event-info-item">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+<circle cx="9" cy="7" r="4"></circle>
+<path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+<path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+</svg>
+<span id="currentStatus">현재 참가 현황: 집계 중...</span>
+</div>
+<div class="event-info-item">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+</svg>
+<span id="participationRate">참가율: 계산 중...</span>
+</div>
+</div>
+
+<!-- 알림 설정 및 공유 버튼 -->
+<button id="notificationBtn" class="notification-button">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+<path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+</svg>
+알림 설정
+</button>
+<button onclick="shareEvent()" class="share-button">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+<circle cx="18" cy="5" r="3"></circle>
+<circle cx="6" cy="12" r="3"></circle>
+<circle cx="18" cy="19" r="3"></circle>
+<line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+<line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+</svg>
+공유하기
+</button>
 </div>
 
 <script>
@@ -194,6 +314,7 @@ measurementId: "G-S0BBB92D1X"
 // Firebase 초기화
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const messaging = firebase.messaging();
 const attendanceRef = db.collection('attendance').doc('counter');
 
 let count = 0;
@@ -271,46 +392,214 @@ hideLoading();
 }
 }
 
-// 실시간 업데이트 및 상태 관리
-attendanceRef.onSnapshot((doc) => {
-if (doc.exists) {
-const data = doc.data();
-count = data.count || 0;
-MAX_CAPACITY = data.maxCapacity || 300;
+// 남은 시간 계산 및 표시 함수
+function updateTimeLeft(eventDate, eventTime) {
+    const now = new Date();
+    const [year, month, day] = eventDate.split('-').map(Number);
+    const [eventHours, minutes] = eventTime.split(':').map(Number);
+    const eventDateTime = new Date(year, month - 1, day, eventHours, minutes);
+    const timeLeft = eventDateTime - now;
 
-                // 이벤트 유효성 검사
-                if (data.date && data.time && !isEventValid(data.date, data.time)) {
-                    document.getElementById('statusMessage').textContent = '이벤트가 종료되었습니다';
-                    document.getElementById('joinBtn').disabled = true;
-                    document.getElementById('cancelBtn').disabled = true;
-                    return;
-                }
+    if (timeLeft <= 0) {
+        document.getElementById('eventTimeLeft').textContent = '행사가 종료되었습니다';
+        return;
+    }
 
-                // 초기화 여부 확인
-                const lastResetTimestamp = localStorage.getItem('lastResetTimestamp');
-                const newResetTimestamp = data.resetTimestamp?.toDate();
-                
-                if ((newResetTimestamp && (!lastResetTimestamp || newResetTimestamp > new Date(lastResetTimestamp))) || count === 0) {
-                    localStorage.removeItem('hasJoined');
-                    if (newResetTimestamp) {
-                        localStorage.setItem('lastResetTimestamp', newResetTimestamp.toISOString());
-                    }
-                    hasJoined = false;
-                } else {
-                    hasJoined = localStorage.getItem('hasJoined') === 'true';
-                }
+    const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+    const remainingHours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const mins = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
 
-                document.getElementById('mainTitle').textContent = data.mainTitle || '신불산 프로젝트';
-                if (data.date && data.time) {
-                    document.getElementById('dateInfo').textContent = `${formatDate(data.date)} ${formatTime(data.time)}`;
+    // 남은 시간에 따른 텍스트 색상 변경
+    const timeLeftElement = document.getElementById('eventTimeLeft');
+    timeLeftElement.textContent = `행사까지 남은 시간: ${days}일 ${remainingHours}시간 ${mins}분`;
+    
+    // 24시간 이내일 때 강조
+    if (days === 0 && remainingHours < 24) {
+        timeLeftElement.style.color = '#e74c3c';
+        timeLeftElement.style.fontWeight = 'bold';
+    }
+}
+
+// 참가 현황 업데이트 함수
+function updateParticipationStatus(count, maxCapacity) {
+    const currentStatus = document.getElementById('currentStatus');
+    const participationRate = document.getElementById('participationRate');
+    const rate = Math.round((count / maxCapacity) * 100);
+
+    currentStatus.textContent = `현재 참가 현황: ${count}명 참가 중`;
+    participationRate.textContent = `참가율: ${rate}%`;
+
+    // 참가율에 따른 색상 변경
+    if (rate >= 90) {
+        participationRate.style.color = '#e74c3c';  // 빨간색 (90% 이상)
+    } else if (rate >= 70) {
+        participationRate.style.color = '#f39c12';  // 주황색 (70% 이상)
+    } else if (rate >= 50) {
+        participationRate.style.color = '#2ecc71';  // 초록색 (50% 이상)
+    }
+}
+
+// 알림 권한 요청 및 설정
+async function setupNotifications() {
+    const notificationBtn = document.getElementById('notificationBtn');
+    
+    if (!('Notification' in window)) {
+        notificationBtn.style.display = 'none';
+        return;
+    }
+
+    // 이미 구독 중인지 확인
+    const isSubscribed = localStorage.getItem('notificationSubscribed') === 'true';
+    if (isSubscribed) {
+        notificationBtn.classList.add('active');
+    }
+
+    notificationBtn.addEventListener('click', async () => {
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                const token = await messaging.getToken();
+                if (token) {
+                    await subscribeToNotifications(token);
+                    notificationBtn.classList.add('active');
+                    localStorage.setItem('notificationSubscribed', 'true');
                 }
-                updateDisplay();
             }
-        }, (error) => {
-            console.error("Snapshot error:", error);
-            isOnline = false;
-            updateDisplay();
+        } catch (error) {
+            console.error('알림 설정 중 오류:', error);
+            alert('알림 설정에 실패했습니다. 브라우저 설정을 확인해주세요.');
+        }
+    });
+
+    // 토큰 갱신 처리
+    messaging.onTokenRefresh(async () => {
+        try {
+            const token = await messaging.getToken();
+            if (token) {
+                await subscribeToNotifications(token);
+            }
+        } catch (error) {
+            console.error('토큰 갱신 중 오류:', error);
+        }
+    });
+}
+
+// 알림 구독
+async function subscribeToNotifications(token) {
+    try {
+        // 사용자 토큰 저장
+        await db.collection('notificationTokens').doc(token).set({
+            token: token,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            subscribedToEvent: true
         });
+
+        // 알림 수신 설정
+        messaging.onMessage((payload) => {
+            const { title, body } = payload.notification;
+            
+            // 브라우저 알림 표시
+            new Notification(title, {
+                body: body,
+                icon: '/icon.png'  // 프로젝트 아이콘 경로
+            });
+        });
+
+    } catch (error) {
+        console.error('알림 구독 중 오류:', error);
+        throw error;
+    }
+}
+
+// 알림 구독 취소
+async function unsubscribeFromNotifications() {
+    try {
+        const token = await messaging.getToken();
+        if (token) {
+            await db.collection('notificationTokens').doc(token).delete();
+            await messaging.deleteToken();
+            localStorage.removeItem('notificationSubscribed');
+            document.getElementById('notificationBtn').classList.remove('active');
+        }
+    } catch (error) {
+        console.error('알림 구독 취소 중 오류:', error);
+    }
+}
+
+// 공유하기 기능
+async function shareEvent() {
+    const shareData = {
+        title: document.getElementById('mainTitle').textContent,
+        text: '신불산 프로젝트에 참여하세요!',
+        url: window.location.href
+    };
+
+    try {
+        if (navigator.share) {
+            await navigator.share(shareData);
+        } else {
+            // 클립보드에 링크 복사
+            await navigator.clipboard.writeText(window.location.href);
+            alert('링크가 클립보드에 복사되었습니다!');
+        }
+    } catch (error) {
+        console.error('공유하기 실패:', error);
+    }
+}
+
+// 실시간 업데이트 리스너 수정
+attendanceRef.onSnapshot((doc) => {
+    if (doc.exists) {
+        const data = doc.data();
+        const prevCount = count;
+        count = data.count || 0;
+        MAX_CAPACITY = data.maxCapacity || 300;
+
+        // 정원 임박 알림 조건 체크 (90% 이상)
+        if (count >= MAX_CAPACITY * 0.9 && prevCount < MAX_CAPACITY * 0.9) {
+            showLocalNotification(
+                '정원 임박!',
+                `현재 참가 인원이 ${count}명입니다. (${Math.round((count/MAX_CAPACITY)*100)}% 달성)`
+            );
+        }
+
+        // 이벤트 유효성 검사
+        if (data.date && data.time && !isEventValid(data.date, data.time)) {
+            document.getElementById('statusMessage').textContent = '이벤트가 종료되었습니다';
+            document.getElementById('joinBtn').disabled = true;
+            document.getElementById('cancelBtn').disabled = true;
+            return;
+        }
+
+        // 초기화 여부 확인
+        const lastResetTimestamp = localStorage.getItem('lastResetTimestamp');
+        const newResetTimestamp = data.resetTimestamp?.toDate();
+        
+        if ((newResetTimestamp && (!lastResetTimestamp || newResetTimestamp > new Date(lastResetTimestamp))) || count === 0) {
+            localStorage.removeItem('hasJoined');
+            if (newResetTimestamp) {
+                localStorage.setItem('lastResetTimestamp', newResetTimestamp.toISOString());
+            }
+            hasJoined = false;
+        } else {
+            hasJoined = localStorage.getItem('hasJoined') === 'true';
+        }
+
+        document.getElementById('mainTitle').textContent = data.mainTitle || '신불산 프로젝트';
+        if (data.date && data.time) {
+            document.getElementById('dateInfo').textContent = `${formatDate(data.date)} ${formatTime(data.time)}`;
+            updateTimeLeft(data.date, data.time);
+        }
+
+        // 참가 현황 업데이트
+        updateParticipationStatus(count, MAX_CAPACITY);
+        updateDisplay();
+    }
+}, (error) => {
+    console.error("Snapshot error:", error);
+    isOnline = false;
+    updateDisplay();
+});
 
 async function joinAttendance() {
 if (!isOnline) {
@@ -404,8 +693,56 @@ myStatus.style.color = '#666';
 }
 }
 
-// 페이지 로드 시 초기 데이터 로드
+// 로컬 알림 표시
+function showLocalNotification(title, body) {
+    if (Notification.permission === 'granted' && localStorage.getItem('notificationSubscribed') === 'true') {
+        new Notification(title, {
+            body: body,
+            icon: '/icon.png'  // 프로젝트 아이콘 경로
+        });
+    }
+}
+
+// 이벤트 시작 전 알림 설정
+function setupEventReminders(eventDate, eventTime) {
+    const [year, month, day] = eventDate.split('-').map(Number);
+    const [hours, minutes] = eventTime.split(':').map(Number);
+    const eventDateTime = new Date(year, month - 1, day, hours, minutes);
+    
+    // 이벤트 1일 전 알림
+    const oneDayBefore = new Date(eventDateTime);
+    oneDayBefore.setDate(oneDayBefore.getDate() - 1);
+    scheduleNotification(oneDayBefore, '내일이 신불산 프로젝트 날입니다!', '잊지 말고 참여해주세요.');
+    
+    // 이벤트 1시간 전 알림
+    const oneHourBefore = new Date(eventDateTime);
+    oneHourBefore.setHours(oneHourBefore.getHours() - 1);
+    scheduleNotification(oneHourBefore, '곧 신불산 프로젝트가 시작됩니다!', '1시간 후에 시작됩니다.');
+}
+
+// 알림 스케줄링
+function scheduleNotification(date, title, body) {
+    const now = new Date();
+    if (date > now) {
+        const timeout = date.getTime() - now.getTime();
+        setTimeout(() => {
+            showLocalNotification(title, body);
+        }, timeout);
+    }
+}
+
+// 페이지 로드 시 초기화
 loadInitialData();
 setupNetworkMonitoring();
+setupNotifications();
+
+// 1분마다 남은 시간 업데이트
+setInterval(() => {
+    const dateInfo = document.getElementById('dateInfo').textContent;
+    if (dateInfo) {
+        const [date, time] = dateInfo.split(' ');
+        updateTimeLeft(date, time);
+    }
+}, 60000);
 </script>
 </body>

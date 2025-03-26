@@ -233,6 +233,92 @@
                 background-color: #fff;
             }
         }
+
+        .statistics-section {
+            margin-top: 32px;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #111827;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-title {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .template-section {
+            margin-top: 32px;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .template-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .template-btn {
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .template-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .template-list {
+            margin-top: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .template-item {
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .template-item:hover {
+            background: #f8f9fa;
+        }
     </style>
 </head>
 <body>
@@ -293,7 +379,42 @@
             </div>
         </div>
 
+        <!-- 통계 섹션 추가 -->
+        <div class="statistics-section">
+            <h2 class="section-title">통계</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-title">참가율</div>
+                    <div class="stat-value" id="participationRate">0%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">마지막 업데이트</div>
+                    <div class="stat-value" id="lastUpdate">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 이벤트 템플릿 섹션 -->
+        <div class="template-section">
+            <h2 class="section-title">이벤트 템플릿</h2>
+            <div class="template-actions">
+                <button id="saveTemplateBtn" class="template-btn">현재 설정 저장</button>
+                <button id="loadTemplateBtn" class="template-btn">템플릿 불러오기</button>
+            </div>
+        </div>
+
         <button id="saveBtn" class="save-btn">저장</button>
+    </div>
+
+    <!-- 템플릿 모달 -->
+    <div id="templateModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">저장된 템플릿</h3>
+            <div id="templateList" class="template-list"></div>
+            <div class="modal-buttons">
+                <button id="closeTemplateModal" class="modal-btn modal-btn-cancel">닫기</button>
+            </div>
+        </div>
     </div>
 
     <div id="resetModal" class="modal">
@@ -508,7 +629,94 @@
             }
         });
 
-        // 실시간 업데이트 리스너
+        // 통계 업데이트 함수
+        function updateStatistics(data) {
+            const participationRate = document.getElementById('participationRate');
+            const lastUpdate = document.getElementById('lastUpdate');
+            
+            // 참가율 계산
+            const rate = data.maxCapacity ? Math.round((data.count / data.maxCapacity) * 100) : 0;
+            participationRate.textContent = `${rate}%`;
+            
+            // 마지막 업데이트 시간
+            if (data.lastUpdated) {
+                const date = data.lastUpdated.toDate();
+                lastUpdate.textContent = new Intl.DateTimeFormat('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }).format(date);
+            }
+        }
+
+        // 템플릿 저장
+        async function saveTemplate() {
+            try {
+                const templateName = prompt('템플릿 이름을 입력하세요:');
+                if (!templateName) return;
+
+                const template = {
+                    name: templateName,
+                    mainTitle: mainTitle.value,
+                    maxCapacity: Number(maxParticipants.value),
+                    date: dateInput.value,
+                    time: timeInput.value,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                await db.collection('eventTemplates').add(template);
+                alert('템플릿이 저장되었습니다.');
+            } catch (error) {
+                console.error('템플릿 저장 중 오류:', error);
+                alert('템플릿 저장에 실패했습니다.');
+            }
+        }
+
+        // 템플릿 목록 로드
+        async function loadTemplateList() {
+            try {
+                const templateList = document.getElementById('templateList');
+                templateList.innerHTML = '';
+
+                const snapshots = await db.collection('eventTemplates')
+                    .orderBy('createdAt', 'desc')
+                    .get();
+
+                snapshots.forEach(doc => {
+                    const template = doc.data();
+                    const div = document.createElement('div');
+                    div.className = 'template-item';
+                    div.textContent = `${template.name} (${template.date} ${template.time})`;
+                    div.onclick = () => applyTemplate(template);
+                    templateList.appendChild(div);
+                });
+
+                document.getElementById('templateModal').style.display = 'flex';
+            } catch (error) {
+                console.error('템플릿 로드 중 오류:', error);
+                alert('템플릿 목록을 불러오는데 실패했습니다.');
+            }
+        }
+
+        // 템플릿 적용
+        function applyTemplate(template) {
+            mainTitle.value = template.mainTitle;
+            maxParticipants.value = template.maxCapacity;
+            dateInput.value = template.date;
+            timeInput.value = template.time;
+            document.getElementById('templateModal').style.display = 'none';
+        }
+
+        // 이벤트 리스너 추가
+        document.getElementById('saveTemplateBtn').addEventListener('click', saveTemplate);
+        document.getElementById('loadTemplateBtn').addEventListener('click', loadTemplateList);
+        document.getElementById('closeTemplateModal').addEventListener('click', () => {
+            document.getElementById('templateModal').style.display = 'none';
+        });
+
+        // 실시간 업데이트 리스너 수정
         attendanceRef.onSnapshot((doc) => {
             if (doc.exists) {
                 const data = doc.data();
@@ -518,6 +726,7 @@
                 remainingSeats.value = (data.maxCapacity || 300) - (data.count || 0);
                 dateInput.value = data.date || '';
                 timeInput.value = data.time || '';
+                updateStatistics(data);
             }
         }, (error) => {
             console.error("Snapshot error:", error);
