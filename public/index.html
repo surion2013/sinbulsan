@@ -349,17 +349,47 @@ async function loadInitialData() {
                 time: '14:00',
                 mainTitle: '신불산 프로젝트'
             });
+            hasJoined = false;
+            localStorage.removeItem('hasJoined');
         } else {
             const data = doc.data();
+            
+            // 초기화 여부 확인
+            const lastResetTimestamp = localStorage.getItem('lastResetTimestamp');
+            const storedResetTimestamp = data.resetTimestamp?.toDate();
+            const wasReset = storedResetTimestamp && (!lastResetTimestamp || storedResetTimestamp > new Date(lastResetTimestamp));
+            
+            // 참가 상태 설정
+            if (wasReset || data.count === 0) {
+                hasJoined = false;
+                localStorage.removeItem('hasJoined');
+                if (storedResetTimestamp) {
+                    localStorage.setItem('lastResetTimestamp', storedResetTimestamp.toISOString());
+                }
+            } else {
+                hasJoined = localStorage.getItem('hasJoined') === 'true';
+            }
+
+            // UI 업데이트
             document.getElementById('mainTitle').textContent = data.mainTitle || '신불산 프로젝트';
             const formattedDate = formatDate(data.date);
             const formattedTime = formatTime(data.time);
             document.getElementById('dateInfo').textContent = 
                 `${formattedDate} ${formattedTime}`;
             document.getElementById('capacityInfo').textContent = `최대 수용 인원: ${data.maxCapacity || 300}명`;
+            
+            // 날짜/시간 정보 저장 및 업데이트
             if (data.date && data.time) {
+                localStorage.setItem('eventDate', data.date);
+                localStorage.setItem('eventTime', data.time);
                 updateTimeLeft(data.date, data.time);
             }
+
+            // 초기 상태 업데이트
+            count = data.count || 0;
+            MAX_CAPACITY = data.maxCapacity || 300;
+            updateDisplay();
+            updateParticipationStatus(count, MAX_CAPACITY);
         }
     } catch (error) {
         console.error('데이터 로드 중 오류:', error);
@@ -453,18 +483,26 @@ attendanceRef.onSnapshot((doc) => {
             return;
         }
 
-        // 초기화 여부 확인
+        // 초기화 여부 확인 (로직 개선)
         const lastResetTimestamp = localStorage.getItem('lastResetTimestamp');
         const newResetTimestamp = data.resetTimestamp?.toDate();
+        const wasReset = newResetTimestamp && (!lastResetTimestamp || newResetTimestamp > new Date(lastResetTimestamp));
         
-        if ((newResetTimestamp && (!lastResetTimestamp || newResetTimestamp > new Date(lastResetTimestamp))) || count === 0) {
+        // count가 0이거나 초기화 타임스탬프가 변경되었을 때 참가 상태 초기화
+        if (wasReset || count === 0) {
             localStorage.removeItem('hasJoined');
             if (newResetTimestamp) {
                 localStorage.setItem('lastResetTimestamp', newResetTimestamp.toISOString());
             }
             hasJoined = false;
         } else {
+            // 이전 참가 상태 복원
             hasJoined = localStorage.getItem('hasJoined') === 'true';
+            // count가 0일 때는 강제로 참가 상태 초기화
+            if (count === 0) {
+                hasJoined = false;
+                localStorage.removeItem('hasJoined');
+            }
         }
 
         // UI 업데이트
