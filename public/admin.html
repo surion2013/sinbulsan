@@ -511,7 +511,7 @@
                     date: dateInput.value,
                     time: timeInput.value,
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                }, { merge: true });
 
                 remainingSeats.value = maxCount - currentCount;
                 alert('저장되었습니다.');

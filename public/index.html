@@ -374,21 +374,33 @@ return `${hour < 12 ? '오전' : '오후'} ${String(hour % 12 || 12).padStart(2,
 // 초기 데이터 로드 (상태 설정 제외)
 async function loadInitialData() {
 try {
-showLoading();
-const doc = await attendanceRef.get();
-if (!doc.exists) {
-await attendanceRef.set({ 
-count: 0, 
-maxCapacity: 300,
-date: '2024-01-13',
-time: '14:00'
-});
-}
+    showLoading();
+    const doc = await attendanceRef.get();
+    if (!doc.exists) {
+        await attendanceRef.set({ 
+            count: 0, 
+            maxCapacity: 300,
+            date: '2024-01-13',
+            time: '14:00',
+            mainTitle: '신불산 프로젝트'
+        });
+    } else {
+        const data = doc.data();
+        document.getElementById('mainTitle').textContent = data.mainTitle || '신불산 프로젝트';
+        document.getElementById('dateInfo').textContent = 
+            data.date && data.time ? 
+            `${formatDate(data.date)} ${formatTime(data.time)}` :
+            '날짜 미정';
+        document.getElementById('capacityInfo').textContent = `최대 수용 인원: ${data.maxCapacity || 300}명`;
+        if (data.date && data.time) {
+            updateTimeLeft(data.date, data.time);
+        }
+    }
 } catch (error) {
-console.error('데이터 로드 중 오류:', error);
-alert('데이터를 불러오는 중 오류가 발생했습니다.');
+    console.error('데이터 로드 중 오류:', error);
+    alert('데이터를 불러오는 중 오류가 발생했습니다.');
 } finally {
-hideLoading();
+    hideLoading();
 }
 }
 
@@ -585,11 +597,13 @@ attendanceRef.onSnapshot((doc) => {
             hasJoined = localStorage.getItem('hasJoined') === 'true';
         }
 
+        // UI 업데이트
         document.getElementById('mainTitle').textContent = data.mainTitle || '신불산 프로젝트';
         if (data.date && data.time) {
             document.getElementById('dateInfo').textContent = `${formatDate(data.date)} ${formatTime(data.time)}`;
             updateTimeLeft(data.date, data.time);
         }
+        document.getElementById('capacityInfo').textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
 
         // 참가 현황 업데이트
         updateParticipationStatus(count, MAX_CAPACITY);
