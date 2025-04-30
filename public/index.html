@@ -603,6 +603,8 @@ async function joinAttendance() {
     return;
   }
   if (!hasJoined && count < MAX_CAPACITY) {
+    hasJoined = true;
+    updateDisplay(); // 즉시 UI 반영
     try {
       showLoading();
       await firebase.firestore().runTransaction(async (transaction) => {
@@ -611,14 +613,14 @@ async function joinAttendance() {
         let max = doc.data().maxCapacity || 300;
         if (currentCount < max) {
           transaction.update(attendanceRef, { count: currentCount + 1 });
-          hasJoined = true;
           localStorage.setItem('hasJoined', 'true');
         } else {
           alert('정원이 초과되었습니다.');
         }
       });
-      updateDisplay();
     } catch (error) {
+      hasJoined = false;
+      updateDisplay();
       console.error('참가 신청 중 오류:', error);
       alert('참가 신청 중 오류가 발생했습니다.');
     } finally {
