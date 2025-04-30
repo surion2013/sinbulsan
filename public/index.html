@@ -203,6 +203,35 @@ background-color: #e9ecef;
 .share-button svg {
 margin-right: 8px;
 }
+
+.reset-status-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 10px;
+}
+
+.reset-status-button:hover {
+    background-color: #e9ecef;
+}
+
+.reset-status-button svg {
+    flex-shrink: 0;
+}
+
+.my-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 </style>
 </head>
 <body>
@@ -221,7 +250,17 @@ margin-right: 8px;
 </div>
 <div class="status-message" id="statusMessage"></div>
 <div id="capacityInfo" class="capacity-info">최대 수용 인원: 300명</div>
-<div class="my-status" id="myStatus"></div>
+<div class="my-status" id="myStatus">
+    <button onclick="resetMyStatus()" class="reset-status-button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 4v6h-6"/>
+            <path d="M1 20v-6h6"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+            <path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        내 상태 초기화
+    </button>
+</div>
 
 <!-- 이벤트 상세 정보 섹션 -->
 <div class="event-details">
@@ -347,49 +386,13 @@ async function loadInitialData() {
                 maxCapacity: 300,
                 date: '2024-01-13',
                 time: '14:00',
-                mainTitle: '신불산 프로젝트'
+                mainTitle: '신불산 프로젝트',
+                lastReset: firebase.firestore.FieldValue.serverTimestamp()
             });
-            hasJoined = false;
-            localStorage.removeItem('hasJoined');
+            clearLocalState();
         } else {
             const data = doc.data();
-            
-            // 초기화 여부 확인
-            const lastResetTimestamp = localStorage.getItem('lastResetTimestamp');
-            const storedResetTimestamp = data.resetTimestamp?.toDate();
-            const wasReset = storedResetTimestamp && (!lastResetTimestamp || storedResetTimestamp > new Date(lastResetTimestamp));
-            
-            // 참가 상태 설정
-            if (wasReset || data.count === 0) {
-                hasJoined = false;
-                localStorage.removeItem('hasJoined');
-                if (storedResetTimestamp) {
-                    localStorage.setItem('lastResetTimestamp', storedResetTimestamp.toISOString());
-                }
-            } else {
-                hasJoined = localStorage.getItem('hasJoined') === 'true';
-            }
-
-            // UI 업데이트
-            document.getElementById('mainTitle').textContent = data.mainTitle || '신불산 프로젝트';
-            const formattedDate = formatDate(data.date);
-            const formattedTime = formatTime(data.time);
-            document.getElementById('dateInfo').textContent = 
-                `${formattedDate} ${formattedTime}`;
-            document.getElementById('capacityInfo').textContent = `최대 수용 인원: ${data.maxCapacity || 300}명`;
-            
-            // 날짜/시간 정보 저장 및 업데이트
-            if (data.date && data.time) {
-                localStorage.setItem('eventDate', data.date);
-                localStorage.setItem('eventTime', data.time);
-                updateTimeLeft(data.date, data.time);
-            }
-
-            // 초기 상태 업데이트
-            count = data.count || 0;
-            MAX_CAPACITY = data.maxCapacity || 300;
-            updateDisplay();
-            updateParticipationStatus(count, MAX_CAPACITY);
+            await syncWithServerState(data);
         }
     } catch (error) {
         console.error('데이터 로드 중 오류:', error);
@@ -397,6 +400,50 @@ async function loadInitialData() {
     } finally {
         hideLoading();
     }
+}
+
+// 서버 상태와 동기화
+async function syncWithServerState(data) {
+    // 초기화 시점 확인
+    const lastReset = data.lastReset?.toDate();
+    const localLastReset = localStorage.getItem('lastReset');
+    const needsReset = !localLastReset || 
+                      (lastReset && new Date(localLastReset) < lastReset);
+
+    if (needsReset) {
+        clearLocalState();
+        if (lastReset) {
+            localStorage.setItem('lastReset', lastReset.toISOString());
+        }
+    }
+
+    // UI 업데이트
+    document.getElementById('mainTitle').textContent = data.mainTitle || '신불산 프로젝트';
+    const formattedDate = formatDate(data.date);
+    const formattedTime = formatTime(data.time);
+    document.getElementById('dateInfo').textContent = `${formattedDate} ${formattedTime}`;
+    document.getElementById('capacityInfo').textContent = `최대 수용 인원: ${data.maxCapacity || 300}명`;
+    
+    // 상태 업데이트
+    count = data.count || 0;
+    MAX_CAPACITY = data.maxCapacity || 300;
+    hasJoined = !needsReset && localStorage.getItem('hasJoined') === 'true';
+
+    // 날짜/시간 정보 저장
+    if (data.date && data.time) {
+        localStorage.setItem('eventDate', data.date);
+        localStorage.setItem('eventTime', data.time);
+        updateTimeLeft(data.date, data.time);
+    }
+
+    updateDisplay();
+    updateParticipationStatus(count, MAX_CAPACITY);
+}
+
+// 로컬 상태 초기화
+function clearLocalState() {
+    hasJoined = false;
+    localStorage.clear(); // 모든 로컬 스토리지 데이터 삭제
 }
 
 // 남은 시간 계산 및 표시 함수
@@ -471,57 +518,7 @@ async function shareEvent() {
 attendanceRef.onSnapshot((doc) => {
     if (doc.exists) {
         const data = doc.data();
-        const prevCount = count;
-        count = data.count || 0;
-        MAX_CAPACITY = data.maxCapacity || 300;
-
-        // 이벤트 유효성 검사
-        if (data.date && data.time && !isEventValid(data.date, data.time)) {
-            document.getElementById('statusMessage').textContent = '이벤트가 종료되었습니다';
-            document.getElementById('joinBtn').disabled = true;
-            document.getElementById('cancelBtn').disabled = true;
-            return;
-        }
-
-        // 초기화 여부 확인 (로직 개선)
-        const lastResetTimestamp = localStorage.getItem('lastResetTimestamp');
-        const newResetTimestamp = data.resetTimestamp?.toDate();
-        const wasReset = newResetTimestamp && (!lastResetTimestamp || newResetTimestamp > new Date(lastResetTimestamp));
-        
-        // count가 0이거나 초기화 타임스탬프가 변경되었을 때 참가 상태 초기화
-        if (wasReset || count === 0) {
-            localStorage.removeItem('hasJoined');
-            if (newResetTimestamp) {
-                localStorage.setItem('lastResetTimestamp', newResetTimestamp.toISOString());
-            }
-            hasJoined = false;
-        } else {
-            // 이전 참가 상태 복원
-            hasJoined = localStorage.getItem('hasJoined') === 'true';
-            // count가 0일 때는 강제로 참가 상태 초기화
-            if (count === 0) {
-                hasJoined = false;
-                localStorage.removeItem('hasJoined');
-            }
-        }
-
-        // UI 업데이트
-        document.getElementById('mainTitle').textContent = data.mainTitle || '신불산 프로젝트';
-        if (data.date && data.time) {
-            const formattedDate = formatDate(data.date);
-            const formattedTime = formatTime(data.time);
-            document.getElementById('dateInfo').textContent = `${formattedDate} ${formattedTime}`;
-            updateTimeLeft(data.date, data.time);
-            
-            // 로컬 스토리지에 최신 날짜/시간 저장
-            localStorage.setItem('eventDate', data.date);
-            localStorage.setItem('eventTime', data.time);
-        }
-        document.getElementById('capacityInfo').textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
-
-        // 참가 현황 업데이트
-        updateParticipationStatus(count, MAX_CAPACITY);
-        updateDisplay();
+        syncWithServerState(data);
     }
 }, (error) => {
     console.error("Snapshot error:", error);
@@ -578,48 +575,87 @@ hideLoading();
 }
 
 function updateDisplay() {
-const counter = document.getElementById('counter');
-const joinBtn = document.getElementById('joinBtn');
-const cancelBtn = document.getElementById('cancelBtn');
-const statusMessage = document.getElementById('statusMessage');
-const myStatus = document.getElementById('myStatus');
-const capacityInfo = document.getElementById('capacityInfo');
+    const counter = document.getElementById('counter');
+    const joinBtn = document.getElementById('joinBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const statusMessage = document.getElementById('statusMessage');
+    const myStatus = document.getElementById('myStatus');
+    const capacityInfo = document.getElementById('capacityInfo');
 
-counter.innerText = count;
-counter.classList.add('update');
-setTimeout(() => counter.classList.remove('update'), 300);
+    counter.innerText = count;
+    counter.classList.add('update');
+    setTimeout(() => counter.classList.remove('update'), 300);
 
-capacityInfo.textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
+    capacityInfo.textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
 
-// 네트워크 상태에 따른 버튼 비활성화
-const buttonsDisabled = !isOnline;
-joinBtn.disabled = buttonsDisabled || hasJoined || count >= MAX_CAPACITY;
-cancelBtn.disabled = buttonsDisabled || !hasJoined;
+    // 네트워크 상태에 따른 버튼 비활성화
+    const buttonsDisabled = !isOnline;
+    joinBtn.disabled = buttonsDisabled || hasJoined || count >= MAX_CAPACITY;
+    cancelBtn.disabled = buttonsDisabled || !hasJoined;
 
-console.log('UI 갱신:', { hasJoined, count, MAX_CAPACITY, joinBtnDisabled: joinBtn.disabled });
+    if (!isOnline) {
+        statusMessage.textContent = '네트워크 연결 끊김';
+        statusMessage.style.color = '#e74c3c';
+    } else if (count >= MAX_CAPACITY) {
+        statusMessage.textContent = '정원이 마감되었습니다';
+        statusMessage.style.color = '#e74c3c';
+    } else if (count === 0) {
+        statusMessage.textContent = '참가자를 기다리고 있습니다';
+        statusMessage.style.color = '#666';
+    } else {
+        statusMessage.textContent = `남은 자리: ${MAX_CAPACITY - count}명`;
+        statusMessage.style.color = '#2ecc71';
+    }
 
-if (!isOnline) {
-statusMessage.textContent = '네트워크 연결 끊김';
-statusMessage.style.color = '#e74c3c';
-} else if (count >= MAX_CAPACITY) {
-statusMessage.textContent = '정원이 마감되었습니다';
-statusMessage.style.color = '#e74c3c';
-} else if (count === 0) {
-statusMessage.textContent = '참가자를 기다리고 있습니다';
-statusMessage.style.color = '#666';
-} else {
-statusMessage.textContent = `남은 자리: ${MAX_CAPACITY - count}명`;
-statusMessage.style.color = '#2ecc71';
+    // 참가 상태 표시
+    myStatus.textContent = hasJoined ? '✅ 참가 신청 완료' : '미참가 상태';
+    myStatus.style.color = hasJoined ? '#2ecc71' : '#666';
 }
 
-if (hasJoined) {
-myStatus.textContent = '✅ 참가 신청 완료';
-myStatus.style.color = '#2ecc71';
-} else {
-myStatus.textContent = '미참가 상태';
-myStatus.style.color = '#666';
+// 내 상태 초기화 함수
+async function resetMyStatus() {
+    if (!isOnline) {
+        alert('네트워크 연결을 확인해주세요.');
+        return;
+    }
+
+    try {
+        showLoading();
+        
+        // 참가 상태였다면 카운트 감소
+        if (hasJoined) {
+            await attendanceRef.update({
+                count: firebase.firestore.FieldValue.increment(-1)
+            });
+        }
+        
+        // 로컬 상태 초기화
+        hasJoined = false;
+        localStorage.removeItem('hasJoined');
+        localStorage.removeItem('lastReset');
+        
+        updateDisplay();
+        alert('내 참가 상태가 초기화되었습니다.');
+    } catch (error) {
+        console.error('상태 초기화 중 오류:', error);
+        alert('상태 초기화 중 오류가 발생했습니다.');
+    } finally {
+        hideLoading();
+    }
 }
-}
+
+// 네트워크 재연결 시 상태 재검증
+window.addEventListener('online', async () => {
+    isOnline = true;
+    try {
+        const doc = await attendanceRef.get();
+        if (doc.exists) {
+            await syncWithServerState(doc.data());
+        }
+    } catch (error) {
+        console.error('상태 재검증 중 오류:', error);
+    }
+});
 
 // 페이지 로드 시 초기화
 loadInitialData();
