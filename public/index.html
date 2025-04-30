@@ -463,6 +463,16 @@ async function loadInitialData() {
     }
 }
 
+// 로컬 상태 초기화 (불필요한 전체 삭제 X)
+function clearLocalState() {
+    hasJoined = false;
+    localStorage.removeItem('hasJoined');
+    localStorage.removeItem('lastReset');
+    localStorage.removeItem('eventDate');
+    localStorage.removeItem('eventTime');
+    localStorage.removeItem('offlineActions');
+}
+
 // 서버 상태와 동기화
 async function syncWithServerState(data) {
     // 초기화 시점 확인
@@ -488,6 +498,7 @@ async function syncWithServerState(data) {
     // 상태 업데이트
     count = data.count || 0;
     MAX_CAPACITY = data.maxCapacity || 300;
+    // hasJoined 복원: localStorage 값이 true면 true, 아니면 false
     hasJoined = !needsReset && localStorage.getItem('hasJoined') === 'true';
 
     // 날짜/시간 정보 저장
@@ -499,12 +510,6 @@ async function syncWithServerState(data) {
 
     updateDisplay();
     updateParticipationStatus(count, MAX_CAPACITY);
-}
-
-// 로컬 상태 초기화
-function clearLocalState() {
-    hasJoined = false;
-    localStorage.clear(); // 모든 로컬 스토리지 데이터 삭제
 }
 
 // 남은 시간 계산 및 표시 함수
@@ -708,12 +713,13 @@ async function resetMyStatus() {
                 count: firebase.firestore.FieldValue.increment(-1)
             });
         }
-        
         // 로컬 상태 초기화
         hasJoined = false;
         localStorage.removeItem('hasJoined');
         localStorage.removeItem('lastReset');
-        
+        localStorage.removeItem('eventDate');
+        localStorage.removeItem('eventTime');
+        localStorage.removeItem('offlineActions');
         updateDisplay();
         alert('내 참가 상태가 초기화되었습니다.');
     } catch (error) {
