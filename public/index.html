@@ -324,6 +324,67 @@ let hasJoined = false;
 let isOnline = true;
 const loadingScreen = document.querySelector('.loading');
 
+// 오프라인 상태에서 임시로 액션을 저장할 큐 (배열)
+let offlineActions = [];
+
+// 로컬 스토리지에 큐를 저장/로드하기
+function saveOfflineActions() {
+  localStorage.setItem('offlineActions', JSON.stringify(offlineActions));
+}
+
+function loadOfflineActions() {
+  const stored = localStorage.getItem('offlineActions');
+  if (stored) {
+    offlineActions = JSON.parse(stored);
+  } else {
+    offlineActions = [];
+  }
+}
+
+// 페이지 로드 시 기존 오프라인 액션 불러오기
+window.addEventListener('load', () => {
+  loadOfflineActions();
+});
+
+// 오프라인 큐에 쌓인 작업들을 Firestore에 반영 (최종 상태만)
+async function processOfflineActions() {
+  if (!offlineActions.length) return;
+  try {
+    showLoading();
+    // 마지막 액션만 반영 (중복 join/cancel 방지)
+    const lastAction = offlineActions[offlineActions.length - 1];
+    if (!lastAction) return;
+    await firebase.firestore().runTransaction(async (transaction) => {
+      const doc = await transaction.get(attendanceRef);
+      let currentCount = doc.data().count || 0;
+      let max = doc.data().maxCapacity || 300;
+      if (lastAction.type === 'join') {
+        if (currentCount < max) {
+          transaction.update(attendanceRef, { count: currentCount + 1 });
+          hasJoined = true;
+          localStorage.setItem('hasJoined', 'true');
+        } else {
+          alert('정원이 초과되었습니다.');
+        }
+      } else if (lastAction.type === 'cancel') {
+        if (currentCount > 0) {
+          transaction.update(attendanceRef, { count: currentCount - 1 });
+          hasJoined = false;
+          localStorage.removeItem('hasJoined');
+        }
+      }
+    });
+    offlineActions = [];
+    saveOfflineActions();
+    updateDisplay();
+  } catch (e) {
+    console.error('오프라인 액션 처리 오류:', e);
+    alert('오프라인 작업 처리 중 오류가 발생했습니다.');
+  } finally {
+    hideLoading();
+  }
+}
+
 // 네트워크 상태 모니터링
 function setupNetworkMonitoring() {
     window.addEventListener('online', () => {
@@ -526,52 +587,71 @@ attendanceRef.onSnapshot((doc) => {
     updateDisplay();
 });
 
+// 참가하기
 async function joinAttendance() {
-if (!isOnline) {
-alert('네트워크 연결을 확인해주세요.');
-return;
+  if (!isOnline) {
+    offlineActions.push({ type: 'join', timestamp: Date.now() });
+    saveOfflineActions();
+    hasJoined = true;
+    localStorage.setItem('hasJoined', 'true');
+    updateDisplay();
+    return;
+  }
+  if (!hasJoined && count < MAX_CAPACITY) {
+    try {
+      showLoading();
+      await firebase.firestore().runTransaction(async (transaction) => {
+        const doc = await transaction.get(attendanceRef);
+        let currentCount = doc.data().count || 0;
+        let max = doc.data().maxCapacity || 300;
+        if (currentCount < max) {
+          transaction.update(attendanceRef, { count: currentCount + 1 });
+          hasJoined = true;
+          localStorage.setItem('hasJoined', 'true');
+        } else {
+          alert('정원이 초과되었습니다.');
+        }
+      });
+      updateDisplay();
+    } catch (error) {
+      console.error('참가 신청 중 오류:', error);
+      alert('참가 신청 중 오류가 발생했습니다.');
+    } finally {
+      hideLoading();
+    }
+  }
 }
 
-if (!hasJoined && count < MAX_CAPACITY) {
-try {
-showLoading();
-await attendanceRef.update({
-count: firebase.firestore.FieldValue.increment(1)
-});
-hasJoined = true;
-localStorage.setItem('hasJoined', 'true');
-updateDisplay();
-} catch (error) {
-console.error('참가 신청 중 오류:', error);
-alert('참가 신청 중 오류가 발생했습니다.');
-} finally {
-hideLoading();
-}
-}
-}
-
+// 참가 취소하기
 async function cancelAttendance() {
-if (!isOnline) {
-alert('네트워크 연결을 확인해주세요.');
-return;
-}
-
-if (hasJoined) {
-try {
-showLoading();
-await attendanceRef.update({
-count: firebase.firestore.FieldValue.increment(-1)
-});
-hasJoined = false;
-localStorage.removeItem('hasJoined');
-updateDisplay();
-} catch (error) {
-console.error('참가 취소 중 오류:', error);
-alert('참가 취소 중 오류가 발생했습니다.');
-} finally {
-hideLoading();
-}
-}
+  if (!isOnline) {
+    offlineActions.push({ type: 'cancel', timestamp: Date.now() });
+    saveOfflineActions();
+    hasJoined = false;
+    localStorage.removeItem('hasJoined');
+    updateDisplay();
+    return;
+  }
+  if (hasJoined) {
+    try {
+      showLoading();
+      await firebase.firestore().runTransaction(async (transaction) => {
+        const doc = await transaction.get(attendanceRef);
+        let currentCount = doc.data().count || 0;
+        if (currentCount > 0) {
+          transaction.update(attendanceRef, { count: currentCount - 1 });
+          hasJoined = false;
+          localStorage.removeItem('hasJoined');
+        }
+      });
+      updateDisplay();
+    } catch (error) {
+      console.error('참가 취소 중 오류:', error);
+      alert('참가 취소 중 오류가 발생했습니다.');
+    } finally {
+      hideLoading();
+    }
+  }
 }
 
 function updateDisplay() {
@@ -644,17 +724,18 @@ async function resetMyStatus() {
     }
 }
 
-// 네트워크 재연결 시 상태 재검증
+// 네트워크가 다시 연결되었을 때, 오프라인 액션 처리
 window.addEventListener('online', async () => {
-    isOnline = true;
-    try {
-        const doc = await attendanceRef.get();
-        if (doc.exists) {
-            await syncWithServerState(doc.data());
-        }
-    } catch (error) {
-        console.error('상태 재검증 중 오류:', error);
+  isOnline = true;
+  try {
+    const doc = await attendanceRef.get();
+    if (doc.exists) {
+      await syncWithServerState(doc.data());
     }
+  } catch (error) {
+    console.error('상태 재검증 중 오류:', error);
+  }
+  await processOfflineActions();
 });
 
 // 페이지 로드 시 초기화
