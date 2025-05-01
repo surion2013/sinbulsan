@@ -502,7 +502,8 @@ async function syncWithServerState(data) {
                       (lastReset && new Date(localLastReset) < lastReset);
 
     if (needsReset) {
-        clearLocalState();
+        clearLocalState();         // 로컬 상태 전부 초기화
+        isPendingJoin = false;      // 관리자 초기화 시에만 참가 버튼 다시 노출
         if (lastReset) {
             localStorage.setItem('lastReset', lastReset.toISOString());
         }
