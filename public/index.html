@@ -1,3 +1,14 @@
+<!--
+MCP Server Configuration:
+{
+  "mcpServers": {
+    "Framelink Figma MCP": {
+      "command": "npx",
+      "args": ["-y", "figma-developer-mcp", "--figma-api-key=YOUR-KEY", "--stdio"]
+    }
+  }
+}
+-->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -244,10 +255,7 @@ margin-right: 8px;
 2024년 1월 13일 (토) 14:00
 </div>
 <div class="counter" id="counter">0</div>
-<div class="button-group">
-<button class="cancel-btn" onclick="cancelAttendance()" id="cancelBtn" disabled>취소</button>
-<button class="join-btn" onclick="joinAttendance()" id="joinBtn">참가</button>
-</div>
+<div class="button-group" id="buttonGroup"></div>
 <div class="status-message" id="statusMessage"></div>
 <div id="capacityInfo" class="capacity-info">최대 수용 인원: 300명</div>
 <div class="my-status" id="myStatus">
@@ -663,8 +671,7 @@ async function cancelAttendance() {
 
 function updateDisplay() {
     const counter = document.getElementById('counter');
-    const joinBtn = document.getElementById('joinBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
+    const buttonGroup = document.getElementById('buttonGroup');
     const statusMessage = document.getElementById('statusMessage');
     const myStatus = document.getElementById('myStatus');
     const capacityInfo = document.getElementById('capacityInfo');
@@ -675,10 +682,35 @@ function updateDisplay() {
 
     capacityInfo.textContent = `최대 수용 인원: ${MAX_CAPACITY}명`;
 
-    // 네트워크 상태에 따른 버튼 비활성화
+    // 버튼 그룹 동적 렌더링
+    buttonGroup.innerHTML = '';
     const buttonsDisabled = !isOnline;
-    joinBtn.disabled = buttonsDisabled || hasJoined || count >= MAX_CAPACITY;
-    cancelBtn.disabled = buttonsDisabled || !hasJoined;
+    if (!hasJoined) {
+        // 참가 전: 참가 버튼만
+        const joinBtn = document.createElement('button');
+        joinBtn.className = 'join-btn';
+        joinBtn.id = 'joinBtn';
+        joinBtn.textContent = count >= MAX_CAPACITY ? '정원 초과' : '참가';
+        joinBtn.disabled = buttonsDisabled || count >= MAX_CAPACITY;
+        joinBtn.onclick = joinAttendance;
+        buttonGroup.appendChild(joinBtn);
+    } else {
+        // 참가 후: 취소 + 신청 완료 버튼
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'cancel-btn';
+        cancelBtn.id = 'cancelBtn';
+        cancelBtn.textContent = '취소';
+        cancelBtn.disabled = buttonsDisabled;
+        cancelBtn.onclick = cancelAttendance;
+        buttonGroup.appendChild(cancelBtn);
+
+        const doneBtn = document.createElement('button');
+        doneBtn.className = 'join-btn';
+        doneBtn.textContent = '신청 완료';
+        doneBtn.disabled = true;
+        doneBtn.style.backgroundColor = '#2ecc71';
+        buttonGroup.appendChild(doneBtn);
+    }
 
     if (!isOnline) {
         statusMessage.textContent = '네트워크 연결 끊김';
