@@ -661,7 +661,7 @@ async function cancelAttendance() {
     offlineActions.push({ type: 'cancel', timestamp: Date.now() });
     saveOfflineActions();
     hasJoined = false;
-    isPendingJoin = false;
+    isPendingJoin = true;  // 다시 신청 대기
     localStorage.removeItem('hasJoined');
     updateDisplay();
     return;
@@ -675,7 +675,7 @@ async function cancelAttendance() {
         if (currentCount > 0) {
           transaction.update(attendanceRef, { count: currentCount - 1 });
           hasJoined = false;
-          isPendingJoin = false;
+          isPendingJoin = true;  // 다시 신청 대기
           localStorage.removeItem('hasJoined');
         }
       });
@@ -775,7 +775,13 @@ function updateDisplay() {
 }
 
 function showPendingJoinUI() {
-    isPendingJoin = true;
+    // 참가 버튼 클릭 시: 로컬 저장소·쿠키 모두 초기화
+    clearLocalState();
+    clearCookies();
+    offlineActions = [];
+    saveOfflineActions();
+
+    isPendingJoin = true;   // 신청 대기 상태로 전환
     updateDisplay();
 }
 
@@ -830,5 +836,14 @@ setInterval(() => {
         updateTimeLeft(savedDate, savedTime);
     }
 }, 60000);
+
+// 모든 쿠키 제거
+function clearCookies() {
+    document.cookie.split(';').forEach(c => {
+        document.cookie =
+          c.trim().split('=')[0] +
+          '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
+    });
+}
 </script>
 </body>
