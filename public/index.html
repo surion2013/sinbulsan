@@ -507,8 +507,12 @@ async function syncWithServerState(data) {
     // 상태 업데이트
     count = data.count || 0;
     MAX_CAPACITY = data.maxCapacity || 300;
-    // hasJoined 복원: localStorage 값이 true면 true, 아니면 false
-    hasJoined = !needsReset && localStorage.getItem('hasJoined') === 'true';
+    // isPendingJoin은 서버 데이터 오면 항상 false로 초기화
+    isPendingJoin = false;
+    // hasJoined 복원: 이미 true면 그대로, 아니면 localStorage 값 사용
+    if (!hasJoined) {
+        hasJoined = !needsReset && localStorage.getItem('hasJoined') === 'true';
+    }
 
     // 날짜/시간 정보 저장
     if (data.date && data.time) {
