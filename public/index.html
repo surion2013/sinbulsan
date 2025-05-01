@@ -315,7 +315,7 @@ const firebaseConfig = {
 apiKey: "AIzaSyALcM_DFFdupCLCd-oW0f0IBanjngX396I",
 authDomain: "sinbulsan-5c1f9.firebaseapp.com",
 projectId: "sinbulsan-5c1f9",
-storageBucket: "sinbulsan-5c1f9.firebasestorage.app",
+storageBucket: "sinbulsan-5c1f9.appspot.com",
 messagingSenderId: "316026496310",
 appId: "1:316026496310:web:dd132c679d3f765fc9ff97",
 measurementId: "G-S0BBB92D1X"
@@ -396,15 +396,26 @@ async function processOfflineActions() {
 
 // 네트워크 상태 모니터링
 function setupNetworkMonitoring() {
-    window.addEventListener('online', () => {
-        isOnline = true;
-        updateDisplay();
-    });
+  window.addEventListener('online', async () => {
+    isOnline = true;
+    // ① 오프라인 동안 쌓인 작업 먼저 전송
+    await processOfflineActions();
+    // ② 서버 상태 재동기화
+    try {
+      const doc = await attendanceRef.get();
+      if (doc.exists) {
+        await syncWithServerState(doc.data());
+      }
+    } catch (error) {
+      console.error('상태 재검증 중 오류:', error);
+    }
+    updateDisplay();
+  });
 
-    window.addEventListener('offline', () => {
-        isOnline = false;
-        updateDisplay();
-    });
+  window.addEventListener('offline', () => {
+    isOnline = false;
+    updateDisplay();
+  });
 }
 
 // 이벤트 날짜/시간 유효성 검사
@@ -709,7 +720,8 @@ function updateDisplay() {
         cancelBtn.className = 'cancel-btn';
         cancelBtn.id = 'cancelBtn';
         cancelBtn.textContent = '취소';
-        cancelBtn.disabled = buttonsDisabled;
+        // 참가 대기 단계에서는 취소 버튼을 잠시 비활성화
+        cancelBtn.disabled = true;
         cancelBtn.onclick = cancelPendingJoin;
         buttonGroup.appendChild(cancelBtn);
 
@@ -804,20 +816,6 @@ async function resetMyStatus() {
         hideLoading();
     }
 }
-
-// 네트워크가 다시 연결되었을 때, 오프라인 액션 처리
-window.addEventListener('online', async () => {
-  isOnline = true;
-  try {
-    const doc = await attendanceRef.get();
-    if (doc.exists) {
-      await syncWithServerState(doc.data());
-    }
-  } catch (error) {
-    console.error('상태 재검증 중 오류:', error);
-  }
-  await processOfflineActions();
-});
 
 // 페이지 로드 시 초기화
 loadInitialData();
