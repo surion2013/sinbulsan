@@ -329,6 +329,7 @@ const attendanceRef = db.collection('attendance').doc('counter');
 let count = 0;
 let MAX_CAPACITY = 300;
 let hasJoined = false;
+let isPendingJoin = false;
 let isOnline = true;
 const loadingScreen = document.querySelector('.loading');
 
@@ -606,12 +607,14 @@ async function joinAttendance() {
     offlineActions.push({ type: 'join', timestamp: Date.now() });
     saveOfflineActions();
     hasJoined = true;
+    isPendingJoin = false;
     localStorage.setItem('hasJoined', 'true');
     updateDisplay();
     return;
   }
   if (!hasJoined && count < MAX_CAPACITY) {
     hasJoined = true;
+    isPendingJoin = false;
     updateDisplay(); // 즉시 UI 반영
     try {
       showLoading();
@@ -643,6 +646,7 @@ async function cancelAttendance() {
     offlineActions.push({ type: 'cancel', timestamp: Date.now() });
     saveOfflineActions();
     hasJoined = false;
+    isPendingJoin = false;
     localStorage.removeItem('hasJoined');
     updateDisplay();
     return;
@@ -656,6 +660,7 @@ async function cancelAttendance() {
         if (currentCount > 0) {
           transaction.update(attendanceRef, { count: currentCount - 1 });
           hasJoined = false;
+          isPendingJoin = false;
           localStorage.removeItem('hasJoined');
         }
       });
@@ -685,17 +690,34 @@ function updateDisplay() {
     // 버튼 그룹 동적 렌더링
     buttonGroup.innerHTML = '';
     const buttonsDisabled = !isOnline;
-    if (!hasJoined) {
+    if (!hasJoined && !isPendingJoin) {
         // 참가 전: 참가 버튼만
         const joinBtn = document.createElement('button');
         joinBtn.className = 'join-btn';
         joinBtn.id = 'joinBtn';
         joinBtn.textContent = count >= MAX_CAPACITY ? '정원 초과' : '참가';
         joinBtn.disabled = buttonsDisabled || count >= MAX_CAPACITY;
-        joinBtn.onclick = joinAttendance;
+        joinBtn.onclick = showPendingJoinUI;
         buttonGroup.appendChild(joinBtn);
-    } else {
-        // 참가 후: 취소 + 신청 완료 버튼
+    } else if (isPendingJoin) {
+        // 참가 대기: 취소 + 신청 완료 버튼
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'cancel-btn';
+        cancelBtn.id = 'cancelBtn';
+        cancelBtn.textContent = '취소';
+        cancelBtn.disabled = buttonsDisabled;
+        cancelBtn.onclick = cancelPendingJoin;
+        buttonGroup.appendChild(cancelBtn);
+
+        const doneBtn = document.createElement('button');
+        doneBtn.className = 'join-btn';
+        doneBtn.textContent = '신청 완료';
+        doneBtn.disabled = buttonsDisabled;
+        doneBtn.style.backgroundColor = '#2ecc71';
+        doneBtn.onclick = joinAttendance;
+        buttonGroup.appendChild(doneBtn);
+    } else if (hasJoined) {
+        // 참가 완료: 취소 + 신청 완료(비활성)
         const cancelBtn = document.createElement('button');
         cancelBtn.className = 'cancel-btn';
         cancelBtn.id = 'cancelBtn';
@@ -727,8 +749,23 @@ function updateDisplay() {
     }
 
     // 참가 상태 표시
-    myStatus.textContent = hasJoined ? '✅ 참가 신청 완료' : '미참가 상태';
-    myStatus.style.color = hasJoined ? '#2ecc71' : '#666';
+    if (isPendingJoin) {
+        myStatus.textContent = '신청 대기 중';
+        myStatus.style.color = '#f39c12';
+    } else {
+        myStatus.textContent = hasJoined ? '✅ 참가 신청 완료' : '미참가 상태';
+        myStatus.style.color = hasJoined ? '#2ecc71' : '#666';
+    }
+}
+
+function showPendingJoinUI() {
+    isPendingJoin = true;
+    updateDisplay();
+}
+
+function cancelPendingJoin() {
+    isPendingJoin = false;
+    updateDisplay();
 }
 
 // 내 상태 초기화 함수
